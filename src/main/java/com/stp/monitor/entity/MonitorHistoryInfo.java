@@ -1,0 +1,31 @@
+package com.stp.monitor.entity;
+
+import jakarta.persistence.*;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+@Entity
+@Table(name = "monitor_history_info")
+public class MonitorHistoryInfo {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "monitor_id")
+    private String monitorId;
+
+    @Column(name = "monitor_name")
+    private String monitorName;
+
+    @Column(name = "monitor_value")
+    private String monitorValue;
+
+    @Column(name = "create_time")
+    private LocalDateTime createTime;
+
+    @Column(name = "update_time")
+    private LocalDateTime updateTime;
+}

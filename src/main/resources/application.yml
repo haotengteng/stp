@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: stp-monitor
+  datasource:
+    url: jdbc:mysql://localhost:3306/stp_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+mqtt:
+  enabled: true
+  broker-url: tcp://localhost:1883
+  client-id: stp-monitor-client
+  username:
+  password:
+  subscribe-topic: /UploadTopicNB
+  resp-topic: /RespTopicNB
+  publish-topic: /DownloadTopicNB
+  qos: 1
+  completion-timeout: 5000
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    com.stp.monitor.mqtt: info
+    com.stp.monitor.config: info

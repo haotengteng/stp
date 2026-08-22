@@ -1,0 +1,1 @@
+{"code":500,"msg":"系统异常：error occurred in message handler [bean 'mqttOutbound'; defined in: 'class path resource [com/stp/monitor/config/MqttIntegrationConfig.class]'; from source: 'com.stp.monitor.config.MqttIntegrationConfig.mqttOutbound(org.springframework.integration.mqtt.core.MqttPahoClientFactory)']","data":null}
