@@ -20,7 +20,7 @@ spring:
 
 mqtt:
   enabled: true
-  broker-url: tcp://localhost:1883
+  broker-url: tcp://broker.emqx.io:1883
   client-id: stp-monitor-client
   username:
   password:
@@ -31,6 +31,9 @@ mqtt:
   completion-timeout: 5000
 
 logging:
+  charset:
+    # 控制台按 GBK 输出，避免中文 Windows 终端(代码页936)乱码
+    console: GBK
   level:
     org.hibernate.SQL: debug
     com.stp.monitor.mqtt: info

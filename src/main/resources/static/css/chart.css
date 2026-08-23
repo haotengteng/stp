@@ -1,0 +1,184 @@
+/* ═══════════════════════════════════════════════════════════════
+   Chart Component Styles
+   Shared styles for chart containers, toolbars, and states
+   ═══════════════════════════════════════════════════════════════ */
+
+/* === Chart Card === */
+.chart-card {
+  margin-bottom: var(--space-6);
+}
+
+.chart-card .card-header {
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* === Chart Toolbar === */
+.chart-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.chart-toolbar .form-input {
+  width: 220px;
+}
+
+.chart-toolbar .form-select {
+  width: auto;
+  min-width: 160px;
+}
+
+/* === Chart Container === */
+.chart-container {
+  width: 100%;
+  height: 350px;
+  position: relative;
+}
+
+.chart-container > div {
+  width: 100%;
+  height: 100%;
+}
+
+/* === Chart Empty State === */
+.chart-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 350px;
+  color: var(--color-text-3);
+}
+
+.chart-empty .empty-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-4);
+  color: var(--color-text-4);
+}
+
+.chart-empty .empty-text {
+  font-size: var(--font-size-md);
+}
+
+/* === Chart Loading === */
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 350px;
+}
+
+.chart-loading .loading-spinner {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
+}
+
+/* === Chart Summary === */
+.chart-summary {
+  display: flex;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg-3);
+}
+
+.chart-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chart-summary-item .summary-label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-3);
+}
+
+.chart-summary-item .summary-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-1);
+  font-family: var(--font-mono);
+}
+
+/* === Responsive === */
+@media (max-width: 768px) {
+  .chart-toolbar .form-input {
+    width: 100%;
+  }
+
+  .chart-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .chart-toolbar .form-select {
+    width: 100%;
+  }
+
+  .chart-container,
+  .chart-empty,
+  .chart-loading {
+    height: 260px;
+  }
+
+  .chart-summary {
+    flex-wrap: wrap;
+    gap: var(--space-4);
+  }
+}
+
+/* === Date Range Group === */
+.date-range-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.date-range-group .form-input {
+  width: auto;
+  min-width: 180px;
+}
+
+.date-separator {
+  color: var(--color-text-3);
+  font-size: var(--font-size-md);
+  flex-shrink: 0;
+}
+
+/* datetime-local input styling */
+input[type="datetime-local"] {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-1);
+  cursor: pointer;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+input[type="datetime-local"]:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(22, 100, 255, 0.12);
+}
+
+@media (max-width: 768px) {
+  .date-range-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .date-range-group .form-input {
+    width: 100%;
+  }
+
+  .date-separator {
+    display: none;
+  }
+}

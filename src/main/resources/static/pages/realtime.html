@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>实时监控 - STP 监控平台</title>
+  <link rel="stylesheet" href="/css/design-tokens.css">
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    /* ── Page-specific styles ── */
+    .realtime-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+      flex-wrap: wrap;
+    }
+
+    .realtime-toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+
+    .realtime-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-3);
+    }
+
+    .realtime-toolbar-right .last-update {
+      font-family: var(--font-mono);
+      color: var(--color-text-2);
+    }
+
+    /* Switch */
+    .switch {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      cursor: pointer;
+      gap: var(--space-2);
+    }
+
+    .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+
+    .switch-track {
+      width: 40px;
+      height: 22px;
+      background: var(--color-border);
+      border-radius: var(--radius-full);
+      position: relative;
+      transition: background 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .switch-track::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+      box-shadow: var(--shadow-1);
+    }
+
+    .switch input:checked + .switch-track { background: var(--color-primary); }
+    .switch input:checked + .switch-track::after { transform: translateX(18px); }
+
+    .switch-label {
+      font-size: var(--font-size-md);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-text-1);
+    }
+
+    /* Interval selector */
+    .interval-select {
+      padding: var(--space-1) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      background: var(--color-white);
+      color: var(--color-text-1);
+      cursor: pointer;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .interval-select:focus { border-color: var(--color-primary); }
+
+    /* Section title */
+    .section-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-1);
+      margin-bottom: var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 18px;
+      background: var(--color-primary);
+      border-radius: var(--radius-sm);
+    }
+
+    /* Monitor value grid */
+    .monitor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+    }
+
+    .monitor-card {
+      background: linear-gradient(135deg, var(--color-white) 0%, var(--primary-1) 100%);
+      border: 1px solid var(--color-border-light);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .monitor-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--color-primary), var(--primary-4));
+      opacity: 0.8;
+    }
+
+    .monitor-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-3);
+    }
+
+    .monitor-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+
+    .monitor-card-name {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-1);
+    }
+
+    .monitor-card-device {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-3);
+      background: var(--color-bg-4);
+      padding: 2px var(--space-2);
+      border-radius: var(--radius-sm);
+    }
+
+    .monitor-card-value {
+      font-size: 36px;
+      font-weight: var(--font-weight-bold);
+      color: var(--color-primary);
+      line-height: 1.2;
+      font-family: var(--font-mono);
+      transition: color 0.3s ease;
+    }
+
+    .monitor-card-value.no-data {
+      font-size: var(--font-size-lg);
+      color: var(--color-text-4);
+      font-family: var(--font-family);
+    }
+
+    .monitor-card-time {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-3);
+      margin-top: var(--space-2);
+      font-family: var(--font-mono);
+    }
+
+    /* Table section */
+    .stream-table-wrap {
+      background: var(--color-white);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border-light);
+      overflow: hidden;
+    }
+
+    .stream-table-wrap .card-header {
+      padding: var(--space-4) var(--space-6);
+    }
+
+    .stream-table-container {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    .stream-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-md);
+    }
+
+    .stream-table thead th {
+      background: var(--color-bg-4);
+      color: var(--color-text-2);
+      font-weight: var(--font-weight-medium);
+      text-align: left;
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--color-border-light);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .stream-table tbody td {
+      padding: var(--space-3) var(--space-4);
+      border-bottom: 1px solid var(--color-border-light);
+      color: var(--color-text-1);
+    }
+
+    .stream-table tbody tr:hover { background: var(--color-bg-3); }
+    .stream-table tbody tr:last-child td { border-bottom: none; }
+
+    .stream-table .col-value {
+      font-family: var(--font-mono);
+      font-weight: var(--font-weight-medium);
+      color: var(--color-primary);
+    }
+
+    .stream-table .col-time {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-3);
+    }
+
+    .stream-table .col-id {
+      font-family: var(--font-mono);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-3);
+    }
+
+    /* New row fade-in animation */
+    @keyframes row-fade-in {
+      0% {
+        opacity: 0;
+        background: var(--primary-1);
+      }
+      100% {
+        opacity: 1;
+        background: transparent;
+      }
+    }
+
+    .stream-table tbody tr.row-new {
+      animation: row-fade-in 1.5s ease;
+    }
+
+    .stream-table tbody tr.row-new td {
+      background: transparent;
+    }
+
+    /* Value update flash */
+    @keyframes value-flash {
+      0% { color: var(--color-primary); }
+      50% { color: var(--color-primary-hover); text-shadow: 0 0 8px rgba(22, 100, 255, 0.3); }
+      100% { color: var(--color-primary); }
+    }
+
+    .monitor-card-value.value-updated {
+      animation: value-flash 0.6s ease;
+    }
+
+    /* Loading skeleton */
+    .skeleton-card {
+      background: linear-gradient(135deg, var(--color-white) 0%, var(--color-bg-4) 100%);
+      border: 1px solid var(--color-border-light);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      height: 140px;
+    }
+
+    .skeleton-line {
+      background: var(--color-bg-5);
+      border-radius: var(--radius-sm);
+      animation: skeleton-pulse 1.5s ease infinite;
+    }
+
+    @keyframes skeleton-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .refresh-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-1);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-3);
+    }
+
+    .refresh-indicator .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--color-success);
+      animation: pulse-dot 2s ease infinite;
+    }
+
+    .refresh-indicator.paused .dot {
+      background: var(--color-text-4);
+      animation: none;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
+  <script src="/js/realtime.js"></script>
+</body>
+</html>

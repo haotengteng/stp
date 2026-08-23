@@ -60,9 +60,11 @@ public class MonitorConfigController {
 
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody MonitorConfigRequest request) {
-        MonitorConfig entity = new MonitorConfig();
+        MonitorConfig entity = monitorConfigService.findById(id);
+        if (entity == null) {
+            return Result.fail("监控点不存在");
+        }
         BeanUtils.copyProperties(request, entity);
-        entity.setId(id);
         monitorConfigService.save(entity);
         monitorConfigCache.reload();
         return Result.success();
@@ -89,12 +91,12 @@ public class MonitorConfigController {
     }
 
     /**
-     * 以所有监控点 monitor_id 为 key，value 固定为 1，生成 JSON 结构
+     * 以所有监控点 monitor_id 为 key，value 同为 monitor_id，生成 JSON 结构
      */
     @GetMapping("/init-json")
-    public Result<Map<String, Integer>> initJson() {
-        Map<String, Integer> result = monitorConfigService.findAll().stream()
-                .collect(Collectors.toMap(MonitorConfig::getMonitorId, c -> 1, (a, b) -> a));
+    public Result<Map<String, String>> initJson() {
+        Map<String, String> result = monitorConfigService.findAll().stream()
+                .collect(Collectors.toMap(MonitorConfig::getMonitorId, MonitorConfig::getMonitorId, (a, b) -> a));
         return Result.success(result);
     }
 }

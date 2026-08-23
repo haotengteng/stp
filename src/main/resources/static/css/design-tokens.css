@@ -1,0 +1,172 @@
+/* ═══════════════════════════════════════════════════════════════
+   Volcengine 源力 Design System - Design Tokens
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  /* === Color Scales === */
+  --primary-1: #F3F7FF;
+  --primary-2: #EBF1FF;
+  --primary-3: #97BCFF;
+  --primary-4: #6E9FFF;
+  --primary-5: #387BFF;
+  --primary-6: #1664FF;
+  --primary-7: #1759DD;
+  --primary-8: #114AB9;
+
+  --success-1: #EEF9F1;
+  --success-2: #E1F6E6;
+  --success-3: #7CCD94;
+  --success-4: #5CAE77;
+  --success-5: #309256;
+  --success-6: #2A814B;
+  --success-7: #237040;
+  --success-8: #1C5E35;
+
+  --warning-1: #FEF8EB;
+  --warning-2: #FFF3DC;
+  --warning-3: #F9C76D;
+  --warning-4: #F0A50F;
+  --warning-5: #D08D06;
+  --warning-6: #BD7E00;
+  --warning-7: #996600;
+  --warning-8: #7A5200;
+
+  --danger-1: #FDF5F5;
+  --danger-2: #FFECEC;
+  --danger-3: #FFA3A0;
+  --danger-4: #FF706D;
+  --danger-5: #EE3F38;
+  --danger-6: #D7312A;
+  --danger-7: #BD2923;
+  --danger-8: #9F211C;
+
+  --teal-1: #EEF8FF;
+  --teal-2: #E4F3FC;
+  --teal-3: #80C5E0;
+  --teal-4: #58A8C4;
+  --teal-5: #3888A3;
+  --teal-6: #24758E;
+  --teal-7: #076C85;
+  --teal-8: #005A70;
+
+  --violet-1: #FAF4FF;
+  --violet-2: #F2EAFB;
+  --violet-3: #C1A3ED;
+  --violet-4: #A285D4;
+  --violet-5: #876EB8;
+  --violet-6: #6E4C9F;
+  --violet-7: #603F8E;
+  --violet-8: #532D86;
+
+  /* === Text === */
+  --color-text-1: #0C0D0E;
+  --color-text-2: #42464E;
+  --color-text-3: #737A87;
+  --color-text-4: #C7CCD6;
+  --color-text-placeholder: #737A87;
+  --color-text-disabled: #C7CCD6;
+  --color-white: #FFFFFF;
+
+  /* === Fill === */
+  --color-fill-1: #C7CCD6;
+  --color-fill-2: #737A87;
+  --color-fill-3: #42464E;
+  --color-fill-4: #0C0D0E;
+  --color-fill-5: #FFFFFF;
+  --color-fill-6: #FCFDFE;
+
+  /* === Background === */
+  --color-bg-1: #FFFFFF;
+  --color-bg-2: #FCFDFE;
+  --color-bg-3: #FAFBFC;
+  --color-bg-4: #F6F8FA;
+  --color-bg-5: #F1F3F5;
+  --color-bg-page: #F6F8FA;
+  --color-bg-card: #FFFFFF;
+  --color-bg-hover: #F1F3F5;
+  --color-bg-active: #F1F3F5;
+
+  /* === Border === */
+  --color-border-1: #EAEDF1;
+  --color-border-2: #DDE2E9;
+  --color-border-3: #DDE2E9;
+  --color-border: #DDE2E9;
+  --color-border-light: #EAEDF1;
+
+  /* === Semantic === */
+  --color-primary: #1664FF;
+  --color-primary-hover: #387BFF;
+  --color-primary-click: #1759DD;
+  --color-primary-bg: #F3F7FF;
+  --color-primary-disabled: #97BCFF;
+
+  --color-success: #2A814B;
+  --color-success-hover: #309256;
+  --color-success-bg: #EEF9F1;
+
+  --color-warning: #BD7E00;
+  --color-warning-hover: #D08D06;
+  --color-warning-bg: #FEF8EB;
+
+  --color-danger: #D7312A;
+  --color-danger-hover: #EE3F38;
+  --color-danger-bg: #FDF5F5;
+
+  /* === Shadow === */
+  --shadow-1: 0px 1px 2px 0px rgba(12, 13, 14, 0.05);
+  --shadow-2: 0px 2px 6px 0px rgba(12, 13, 14, 0.08);
+  --shadow-3: 0px 5px 15px 0px rgba(12, 13, 14, 0.08), 0px 2px 4px 0px rgba(12, 13, 14, 0.04);
+  --shadow-4: 0px 15px 35px -2px rgba(12, 13, 14, 0.1), 0px 5px 15px 0px rgba(12, 13, 14, 0.06);
+  --shadow-5: 0px 24px 48px -4px rgba(12, 13, 14, 0.12), 0px 8px 20px 0px rgba(12, 13, 14, 0.08);
+
+  /* === Radius === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* === Typography === */
+  --font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "SFMono-Regular", "SF Mono", "Roboto Mono", "Consolas", monospace;
+
+  --font-size-xs: 10px;
+  --font-size-sm: 12px;
+  --font-size-md: 13px;
+  --font-size-lg: 14px;
+  --font-size-xl: 16px;
+  --font-size-xxl: 20px;
+  --font-size-title: 24px;
+  --font-size-display: 28px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.2;
+  --line-height-normal: 1.5;
+  --line-height-loose: 1.8;
+
+  /* === Layout === */
+  --sidebar-width: 232px;
+  --sidebar-collapsed-width: 64px;
+  --header-height: 56px;
+
+  /* === Chart Colors === */
+  --chart-1: #1664FF;
+  --chart-2: #2A814B;
+  --chart-3: #BD7E00;
+  --chart-4: #D7312A;
+  --chart-5: #4E5969;
+}

@@ -55,18 +55,18 @@ public class MonitorOperationHistoryServiceImpl implements MonitorOperationHisto
         }
 
         for (MonitorOperationHistory history : historyList) {
-            String monitorName = history.getMonitorName();
+            String monitorIdData = history.getMonitorId();
 
             for (Map<String, String> wData : wDataList) {
-                String name = wData.get("name");
+                String monitorId = wData.get("name");
                 String err = wData.get("err");
                 String value = wData.get("value");
 
-                if (name != null && name.equals(monitorName)) {
+                if (monitorId != null && monitorId.equals(monitorIdData)) {
                     history.setValue(value);
                     history.setStatus(err);
-                    log.info("更新操作记录: id={}, monitorName={}, value={}",
-                            history.getId(), monitorName, value);
+                    log.info("更新操作记录: id={}, monitorId={}, value={}",
+                            history.getId(), monitorIdData, value);
                     break;
                 }
             }

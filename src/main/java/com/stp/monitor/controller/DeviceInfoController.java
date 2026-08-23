@@ -39,9 +39,11 @@ public class DeviceInfoController {
 
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody DeviceInfoRequest request) {
-        DeviceInfo entity = new DeviceInfo();
+        DeviceInfo entity = deviceInfoService.findById(id);
+        if (entity == null) {
+            return Result.fail("设备不存在");
+        }
         BeanUtils.copyProperties(request, entity);
-        entity.setId(id);
         deviceInfoService.save(entity);
         return Result.success();
     }

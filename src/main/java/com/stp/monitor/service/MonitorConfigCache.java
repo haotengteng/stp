@@ -7,7 +7,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,7 +54,11 @@ public class MonitorConfigCache {
     }
 
     public List<MonitorRuntimeConfig> getAll() {
-        return Collections.unmodifiableList(List.copyOf(configMap.values()));
+        // 按 id 升序返回，保证下拉框等场景顺序稳定
+        return configMap.values().stream()
+                .sorted(Comparator.comparing(MonitorRuntimeConfig::getId,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .collect(Collectors.toUnmodifiableList());
     }
 
     public int size() {

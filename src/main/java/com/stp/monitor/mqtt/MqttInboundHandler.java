@@ -50,7 +50,18 @@ public class MqttInboundHandler {
             Map<String, Object> data = objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() {
             });
             data.forEach((monitorId, value) -> {
-                String monitorValue = value != null ? value.toString() : null;
+                String monitorValue = value != null ? value.toString() : "";
+                if (!StringUtils.hasText(monitorValue)) {
+                    return;
+                }
+                // 边缘网关轮询PLC失败，value 为 error，不处理
+                if ("error".equals(monitorValue)) {
+                    return;
+                }
+                // 边缘网关未设置监控点 ID 与采集值相同，不处理
+                if (monitorId.equals(monitorValue)) {
+                    return;
+                }
                 monitorConfigCache.updateMonitorValue(monitorId, monitorValue);
                 MonitorRuntimeConfig config = monitorConfigCache.getByMonitorId(monitorId);
                 if (config == null) {
@@ -58,7 +69,7 @@ public class MqttInboundHandler {
                     return;
                 }
                 config.setMonitorValue(monitorValue);
-                
+
                 MonitorHistoryInfo history = new MonitorHistoryInfo();
                 history.setMonitorId(monitorId);
                 history.setMonitorName(config.getMonitorName());

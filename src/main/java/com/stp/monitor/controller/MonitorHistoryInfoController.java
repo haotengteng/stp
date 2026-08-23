@@ -9,6 +9,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
@@ -24,8 +26,19 @@ public class MonitorHistoryInfoController {
 
     @GetMapping("/page")
     public Result<Page<MonitorHistoryInfo>> page(@RequestParam(defaultValue = "1") int pageNum,
-                                                 @RequestParam(defaultValue = "10") int pageSize) {
-        Page<MonitorHistoryInfo> page = monitorHistoryInfoService.findAll(PageRequest.of(pageNum - 1, pageSize));
+                                                 @RequestParam(defaultValue = "10") int pageSize,
+                                                 @RequestParam(required = false) String monitorId,
+                                                 @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime startTime,
+                                                 @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm") LocalDateTime endTime) {
+        Page<MonitorHistoryInfo> page;
+        // 有筛选条件时走多条件查询，否则查全部
+        if (monitorId != null || startTime != null || endTime != null) {
+            String mid = (monitorId != null && !monitorId.trim().isEmpty()) ? monitorId.trim() : null;
+            page = monitorHistoryInfoService.findByFilters(mid, startTime, endTime, PageRequest.of(pageNum - 1, pageSize));
+        } else {
+            page = monitorHistoryInfoService.findAll(
+                    PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "createTime")));
+        }
         return Result.success(page);
     }
 

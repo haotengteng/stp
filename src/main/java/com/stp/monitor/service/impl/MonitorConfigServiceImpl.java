@@ -74,6 +74,7 @@ public class MonitorConfigServiceImpl implements MonitorConfigService {
         history.setMonitorName(config.getMonitorName());
         history.setPreValue(String.valueOf(preStatus));
         history.setValue(String.valueOf(status));
+        history.setStatus("1"); // 操作成功
         operationHistoryRepository.save(history);
 
         return true;

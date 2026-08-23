@@ -28,7 +28,7 @@ public class MonitorOperationHistory {
     private String value;
 
     @Column(name = "status")
-    private Integer status;
+    private String status;
 
     @Column(name = "operation_id")
     private String operationId;

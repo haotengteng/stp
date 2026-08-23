@@ -39,9 +39,11 @@ public class UserInfoController {
 
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody UserInfoRequest request) {
-        UserInfo entity = new UserInfo();
+        UserInfo entity = userInfoService.findById(id);
+        if (entity == null) {
+            return Result.fail("用户不存在");
+        }
         BeanUtils.copyProperties(request, entity);
-        entity.setId(id);
         userInfoService.save(entity);
         return Result.success();
     }

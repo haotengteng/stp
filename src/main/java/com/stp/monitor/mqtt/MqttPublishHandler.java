@@ -46,8 +46,9 @@ public class MqttPublishHandler {
      */
     public void publish(String monitorId, String value) {
         String operationId = generateOperationId();
-        String payload = buildControlJson(monitorId, value, operationId);
         saveOperationHistory(monitorId, value, operationId);
+        
+        String payload = buildControlJson(monitorId, value, operationId);
         mqttOutputChannel.send(MessageBuilder.withPayload(payload).build());
         log.info("MQTT 下发消息，payload={}", payload);
     }
@@ -57,8 +58,9 @@ public class MqttPublishHandler {
      */
     public void publish(String topic, String monitorId, String value) {
         String operationId = generateOperationId();
-        String payload = buildControlJson(monitorId, value, operationId);
         saveOperationHistory(monitorId, value, operationId);
+
+        String payload = buildControlJson(monitorId, value, operationId);
         mqttOutputChannel.send(MessageBuilder
                 .withPayload(payload)
                 .setHeader(MqttHeaders.TOPIC, topic)
@@ -107,6 +109,7 @@ public class MqttPublishHandler {
         history.setPreValue(config != null ? config.getMonitorValue() : null);
         history.setValue(value);
         history.setOperationId(operationId);
+        history.setStatus("1"); // 命令下发成功，最终结果由 MQTT 回执更新
         monitorOperationHistoryService.save(history);
         log.info("MQTT 操作记录已保存，monitorId={}，operationId={}", monitorId, operationId);
     }

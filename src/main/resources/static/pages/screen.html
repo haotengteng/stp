@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数据大屏 - STP 监控平台</title>
+  <link rel="stylesheet" href="/css/design-tokens.css">
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/screen.css">
+</head>
+<body class="screen-body">
+  <!-- Background overlay (scan lines / grid pattern) -->
+  <div class="screen-bg-overlay"></div>
+  <div class="screen-grid-overlay"></div>
+
+  <!-- Full-screen container -->
+  <div class="screen-container" id="screenContainer">
+    <!-- Header Bar -->
+    <header class="screen-header">
+      <div class="header-left">
+        <div class="header-date" id="screenDateTime">---- -- -- --:--:--</div>
+      </div>
+      <div class="header-center">
+        <div class="header-title">STP 监控平台 · 数据大屏</div>
+        <div class="header-subtitle">Real-time Monitoring Command Center</div>
+      </div>
+      <div class="header-right">
+        <span class="header-user" id="screenUserName">管理员</span>
+        <button class="header-logout-btn" id="screenLogoutBtn">退出</button>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="screen-main">
+      <!-- Left Column -->
+      <div class="screen-col screen-col-left">
+        <!-- Alarm Statistics -->
+        <div class="screen-panel">
+          <div class="panel-corner panel-corner-tl"></div>
+          <div class="panel-corner panel-corner-tr"></div>
+          <div class="panel-corner panel-corner-bl"></div>
+          <div class="panel-corner panel-corner-br"></div>
+          <div class="panel-header">
+            <span class="panel-title">告警统计</span>
+            <span class="panel-dot"></span>
+          </div>
+          <div class="panel-body">
+            <div class="alarm-stat-grid" id="alarmStatGrid">
+              <div class="alarm-stat-item">
+                <div class="alarm-stat-num glow-blue" id="alarmTotal">0</div>
+                <div class="alarm-stat-label">总告警</div>
+              </div>
+              <div class="alarm-stat-item">
+                <div class="alarm-stat-num glow-red pulse" id="alarmUnhandled">0</div>
+                <div class="alarm-stat-label">未处理</div>
+              </div>
+              <div class="alarm-stat-item">
+                <div class="alarm-stat-num glow-green" id="alarmProcessed">0</div>
+                <div class="alarm-stat-label">已处理</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alarm List -->
+        <div class="screen-panel panel-flex">
+          <div class="panel-corner panel-corner-tl"></div>
+          <div class="panel-corner panel-corner-tr"></div>
+          <div class="panel-corner panel-corner-bl"></div>
+          <div class="panel-corner panel-corner-br"></div>
+          <div class="panel-header">
+            <span class="panel-title">实时告警</span>
+            <span class="panel-dot"></span>
+          </div>
+          <div class="panel-body panel-body-scroll" id="alarmListBody">
+            <div class="screen-loading-text">加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Column -->
+      <div class="screen-col screen-col-center">
+        <!-- Overview Stat Cards -->
+        <div class="overview-row" id="overviewRow">
+          <div class="overview-card">
+            <div class="overview-icon icon-device">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="overview-info">
+              <div class="overview-num glow-blue" id="totalDevices">0</div>
+              <div class="overview-label">设备总数</div>
+            </div>
+          </div>
+          <div class="overview-card">
+            <div class="overview-icon icon-monitor">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            </div>
+            <div class="overview-info">
+              <div class="overview-num glow-blue" id="totalMonitors">0</div>
+              <div class="overview-label">监控点总数</div>
+            </div>
+          </div>
+          <div class="overview-card">
+            <div class="overview-icon icon-enabled">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+            </div>
+            <div class="overview-info">
+              <div class="overview-num glow-green" id="enabledMonitors">0</div>
+              <div class="overview-label">启用监控点</div>
+            </div>
+          </div>
+          <div class="overview-card">
+            <div class="overview-icon icon-alarm">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+            </div>
+            <div class="overview-info">
+              <div class="overview-num glow-orange pulse" id="alarmCountToday">0</div>
+              <div class="overview-label">今日告警</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trend Chart -->
+        <div class="screen-panel panel-flex">
+          <div class="panel-corner panel-corner-tl"></div>
+          <div class="panel-corner panel-corner-tr"></div>
+          <div class="panel-corner panel-corner-bl"></div>
+          <div class="panel-corner panel-corner-br"></div>
+          <div class="panel-header">
+            <span class="panel-title">监控值趋势</span>
+            <span class="panel-dot"></span>
+          </div>
+          <div class="panel-body panel-body-chart">
+            <div id="trendChart" class="chart-container"></div>
+          </div>
+        </div>
+
+        <!-- Latest Values Table -->
+        <div class="screen-panel">
+          <div class="panel-corner panel-corner-tl"></div>
+          <div class="panel-corner panel-corner-tr"></div>
+          <div class="panel-corner panel-corner-bl"></div>
+          <div class="panel-corner panel-corner-br"></div>
+          <div class="panel-header">
+            <span class="panel-title">最新监控值</span>
+            <span class="panel-dot"></span>
+          </div>
+          <div class="panel-body panel-body-table" id="latestValuesBody">
+            <div class="screen-loading-text">加载中...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="screen-col screen-col-right">
+        <!-- Monitor Status Distribution -->
+        <div class="screen-panel">
+          <div class="panel-corner panel-corner-tl"></div>
+          <div class="panel-corner panel-corner-tr"></div>
+          <div class="panel-corner panel-corner-bl"></div>
+          <div class="panel-corner panel-corner-br"></div>
+          <div class="panel-header">
+            <span class="panel-title">监控点状态分布</span>
+            <span class="panel-dot"></span>
+          </div>
+          <div class="panel-body panel-body-chart">
+            <div id="statusChart" class="chart-container"></div>
+          </div>
+        </div>
+
+        <!-- Real-time Data Stream -->
+        <div class="screen-panel panel-flex">
+          <div class="panel-corner panel-corner-tl"></div>
+          <div class="panel-corner panel-corner-tr"></div>
+          <div class="panel-corner panel-corner-bl"></div>
+          <div class="panel-corner panel-corner-br"></div>
+          <div class="panel-header">
+            <span class="panel-title">实时数据流</span>
+            <span class="panel-dot"></span>
+          </div>
+          <div class="panel-body panel-body-scroll" id="streamBody">
+            <div class="screen-loading-text">加载中...</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ECharts CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <!-- API & Utils -->
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
+  <!-- Page logic -->
+  <script src="/js/screen.js"></script>
+</body>
+</html>

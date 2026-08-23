@@ -8,6 +8,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -20,7 +21,8 @@ public class MonitorOperationHistoryController {
     @GetMapping("/page")
     public Result<Page<MonitorOperationHistory>> page(@RequestParam(defaultValue = "1") int pageNum,
                                                      @RequestParam(defaultValue = "10") int pageSize) {
-        Page<MonitorOperationHistory> page = operationHistoryService.findAll(PageRequest.of(pageNum - 1, pageSize));
+        Page<MonitorOperationHistory> page = operationHistoryService.findAll(
+                PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "createTime")));
         return Result.success(page);
     }
 

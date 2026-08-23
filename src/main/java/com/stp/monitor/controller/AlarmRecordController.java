@@ -9,6 +9,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -26,7 +27,8 @@ public class AlarmRecordController {
     @GetMapping("/page")
     public Result<Page<AlarmRecord>> page(@RequestParam(defaultValue = "1") int pageNum,
                                          @RequestParam(defaultValue = "10") int pageSize) {
-        Page<AlarmRecord> page = alarmRecordService.findAll(PageRequest.of(pageNum - 1, pageSize));
+        Page<AlarmRecord> page = alarmRecordService.findAll(
+                PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "createTime")));
         return Result.success(page);
     }
 
@@ -45,9 +47,11 @@ public class AlarmRecordController {
 
     @PutMapping("/{id}")
     public Result<Void> update(@PathVariable Long id, @RequestBody AlarmRecordRequest request) {
-        AlarmRecord entity = new AlarmRecord();
+        AlarmRecord entity = alarmRecordService.findById(id);
+        if (entity == null) {
+            return Result.fail("告警记录不存在");
+        }
         BeanUtils.copyProperties(request, entity);
-        entity.setId(id);
         alarmRecordService.save(entity);
         return Result.success();
     }

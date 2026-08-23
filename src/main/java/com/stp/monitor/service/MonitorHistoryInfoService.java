@@ -15,6 +15,11 @@ public interface MonitorHistoryInfoService {
 
     Page<MonitorHistoryInfo> findAll(Pageable pageable);
 
+    /**
+     * 多条件分页查询：支持监控点ID + 时间范围筛选
+     */
+    Page<MonitorHistoryInfo> findByFilters(String monitorId, LocalDateTime startTime, LocalDateTime endTime, Pageable pageable);
+
     void deleteById(Long id);
 
     List<MonitorHistoryInfo> findLatestByMonitorId(String monitorId);

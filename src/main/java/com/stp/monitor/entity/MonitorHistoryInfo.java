@@ -28,4 +28,20 @@ public class MonitorHistoryInfo {
 
     @Column(name = "update_time")
     private LocalDateTime updateTime;
+
+    @PrePersist
+    public void prePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        if (createTime == null) {
+            createTime = now;
+        }
+        if (updateTime == null) {
+            updateTime = now;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updateTime = LocalDateTime.now();
+    }
 }

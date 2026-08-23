@@ -33,6 +33,11 @@ public class MonitorHistoryInfoServiceImpl implements MonitorHistoryInfoService 
     }
 
     @Override
+    public Page<MonitorHistoryInfo> findByFilters(String monitorId, LocalDateTime startTime, LocalDateTime endTime, Pageable pageable) {
+        return monitorHistoryInfoRepository.findByFilters(monitorId, startTime, endTime, pageable);
+    }
+
+    @Override
     public void deleteById(Long id) {
         monitorHistoryInfoRepository.deleteById(id);
     }
