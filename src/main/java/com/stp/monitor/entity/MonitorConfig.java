@@ -26,9 +26,13 @@ public class MonitorConfig {
     @Column(name = "device_name")
     private String deviceName;
 
-    @Column(name = "status")
-    private Integer status;
+    @Column(name = "permission")
+    private String permission;
 
+    @Column(name = "status")
+    private String status;
+
+    /** 数值类型：INT-布尔型，FLOAT-浮点型 */
     @Column(name = "value_type")
     private String valueType;
 

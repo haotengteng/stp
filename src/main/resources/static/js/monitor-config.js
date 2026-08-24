@@ -11,7 +11,8 @@ const MonitorConfigPage = {
   state: {
     pageNum: 1,
     pageSize: 10,
-    searchName: '',
+    searchDeviceId: '',
+    searchMonitorId: '',
     searchStatus: '',
     editingId: null,
     rawList: [],
@@ -23,19 +24,28 @@ const MonitorConfigPage = {
 
   init() {
     this.renderShell();
+    this.loadMonitorOptions();
     this.bindEvents();
     this.loadTable();
+  },
+
+  async loadMonitorOptions() {
+    await MonitorOptions.setupCascade('searchDeviceId', 'searchMonitorId', {
+      allDeviceLabel: '全部设备',
+      monitorValueField: 'monitorId',
+    });
   },
 
   renderShell() {
     const app = document.getElementById('appContent');
     app.innerHTML = `
       <div class="search-bar">
-        <input type="text" class="form-input" id="searchName" placeholder="监控点名称" value="${Utils.escape(this.state.searchName)}">
-        <select class="form-select" id="searchStatus" style="width:auto;min-width:120px">
+        <select class="form-select" id="searchDeviceId" style="width:120px;flex-shrink:0"><option value="">全部设备</option></select>
+        <select class="form-select" id="searchMonitorId" style="width:130px;flex-shrink:0" disabled><option value="">选择设备</option></select>
+        <select class="form-select" id="searchStatus" style="width:90px;flex-shrink:0">
           <option value="">状态</option>
-          <option value="1">启用</option>
-          <option value="0">禁用</option>
+          <option value="ON">启用</option>
+          <option value="OFF">禁用</option>
         </select>
         <button class="btn btn-primary" id="btnSearch">搜索</button>
         <button class="btn btn-secondary" id="btnReset">重置</button>
@@ -61,23 +71,28 @@ const MonitorConfigPage = {
   bindEvents() {
     // Search
     document.getElementById('btnSearch').addEventListener('click', () => {
-      this.state.searchName = document.getElementById('searchName').value.trim();
+      this.state.searchDeviceId = document.getElementById('searchDeviceId').value;
+      this.state.searchMonitorId = document.getElementById('searchMonitorId').value;
       this.state.searchStatus = document.getElementById('searchStatus').value;
       this.state.pageNum = 1;
       this.loadTable();
     });
 
-    // Enter key in search input
-    document.getElementById('searchName').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') document.getElementById('btnSearch').click();
+    // Monitor change auto-search
+    document.getElementById('searchMonitorId').addEventListener('change', () => {
+      this.state.searchMonitorId = document.getElementById('searchMonitorId').value;
+      this.state.pageNum = 1;
+      this.loadTable();
     });
 
     // Reset
     document.getElementById('btnReset').addEventListener('click', () => {
-      this.state.searchName = '';
+      this.state.searchDeviceId = '';
+      this.state.searchMonitorId = '';
       this.state.searchStatus = '';
       this.state.pageNum = 1;
-      document.getElementById('searchName').value = '';
+      document.getElementById('searchDeviceId').value = '';
+      document.getElementById('searchDeviceId').dispatchEvent(new Event('change'));
       document.getElementById('searchStatus').value = '';
       this.loadTable();
     });
@@ -92,10 +107,17 @@ const MonitorConfigPage = {
     this.state.loading = true;
     this.renderTableLoading();
     try {
-      const res = await API.monitorConfig.page(this.state.pageNum, this.state.pageSize);
-      this.state.rawList = res.content || [];
-      this.state.total = res.totalElements || 0;
-      this.state.totalPages = res.totalPages || 0;
+      const hasFilter = this.state.searchDeviceId || this.state.searchMonitorId || this.state.searchStatus !== '';
+      if (hasFilter) {
+        // 有筛选条件时加载全量数据，确保跨页筛选准确
+        const allData = await API.monitorConfig.cache();
+        this.state.rawList = allData || [];
+      } else {
+        const res = await API.monitorConfig.page(this.state.pageNum, this.state.pageSize);
+        this.state.rawList = res.content || [];
+        this.state.total = res.totalElements || 0;
+        this.state.totalPages = res.totalPages || 0;
+      }
     } catch (err) {
       Toast.error(err.message || '加载数据失败');
       this.state.rawList = [];
@@ -110,22 +132,34 @@ const MonitorConfigPage = {
   applyFilter() {
     let list = [...this.state.rawList];
 
-    // Client-side filter by name
-    if (this.state.searchName) {
-      const kw = this.state.searchName.toLowerCase();
-      list = list.filter(item =>
-        (item.monitorName || '').toLowerCase().includes(kw) ||
-        (item.monitorId || '').toLowerCase().includes(kw)
-      );
+    // Client-side filter by device ID
+    if (this.state.searchDeviceId) {
+      list = list.filter(item => item.deviceId === this.state.searchDeviceId);
+    }
+
+    // Client-side filter by monitor ID
+    if (this.state.searchMonitorId) {
+      list = list.filter(item => item.monitorId === this.state.searchMonitorId);
     }
 
     // Client-side filter by status
     if (this.state.searchStatus !== '') {
-      const st = parseInt(this.state.searchStatus);
+      const st = this.state.searchStatus;
       list = list.filter(item => item.status === st);
     }
 
-    this.state.list = list;
+    // 有筛选条件时，基于全量数据重新计算分页
+    const hasFilter = this.state.searchDeviceId || this.state.searchMonitorId || this.state.searchStatus !== '';
+    if (hasFilter) {
+      this.state.total = list.length;
+      this.state.totalPages = Math.ceil(list.length / this.state.pageSize) || 1;
+      // 客户端分页：截取当前页
+      const start = (this.state.pageNum - 1) * this.state.pageSize;
+      this.state.list = list.slice(start, start + this.state.pageSize);
+    } else {
+      this.state.list = list;
+    }
+
     this.renderTable();
   },
 
@@ -159,12 +193,15 @@ const MonitorConfigPage = {
     const rows = this.state.list.map(item => {
       const statusTag = Utils.statusTag(item.status, 'monitor');
       const valueTypeTag = item.valueType === 'FLOAT'
-        ? '<span class="tag tag-info">FLOAT</span>'
-        : '<span class="tag tag-default">INT</span>';
-      const isEnabled = item.status === 1;
+        ? '<span class="tag tag-info">浮点型</span>'
+        : '<span class="tag tag-default">布尔型</span>';
+      const permissionTag = item.permission === 'r'
+        ? '<span class="tag tag-default">只读</span>'
+        : '<span class="tag tag-info">读写</span>';
+      const isEnabled = item.status === 'ON';
       const switchBtn = isEnabled
-        ? `<button class="btn btn-ghost btn-sm text-warning" onclick="MonitorConfigPage.switchStatus('${Utils.escape(item.monitorId)}', 0)">禁用</button>`
-        : `<button class="btn btn-ghost btn-sm text-success" onclick="MonitorConfigPage.switchStatus('${Utils.escape(item.monitorId)}', 1)">启用</button>`;
+        ? `<button class="btn btn-ghost btn-sm text-warning" onclick="MonitorConfigPage.switchStatus('${Utils.escape(item.monitorId)}', 'OFF')">禁用</button>`
+        : `<button class="btn btn-ghost btn-sm text-success" onclick="MonitorConfigPage.switchStatus('${Utils.escape(item.monitorId)}', 'ON')">启用</button>`;
 
       return `
         <tr>
@@ -174,6 +211,7 @@ const MonitorConfigPage = {
           <td style="font-family:var(--font-mono)">${Utils.escape(item.deviceId)}</td>
           <td>${Utils.escape(item.deviceName)}</td>
           <td>${valueTypeTag}</td>
+          <td>${permissionTag}</td>
           <td>${statusTag}</td>
           <td style="white-space:nowrap">${Utils.formatDateTime(item.createTime)}</td>
           <td style="white-space:nowrap">
@@ -195,6 +233,7 @@ const MonitorConfigPage = {
             <th>设备ID</th>
             <th>设备名称</th>
             <th>数值类型</th>
+            <th>权限控制</th>
             <th>状态</th>
             <th>创建时间</th>
             <th style="white-space:nowrap">操作</th>
@@ -299,17 +338,24 @@ const MonitorConfigPage = {
               <input type="text" class="form-input" id="modalDeviceName" placeholder="请输入设备名称" value="${isEdit ? Utils.escape(item.deviceName) : ''}">
             </div>
             <div class="form-group">
+              <label class="form-label">权限控制</label>
+              <select class="form-select" id="modalPermission">
+                <option value="rw" ${isEdit && item.permission === 'rw' ? 'selected' : !isEdit ? 'selected' : ''}>读写</option>
+                <option value="r" ${isEdit && item.permission === 'r' ? 'selected' : ''}>只读</option>
+              </select>
+            </div>
+            <div class="form-group">
               <label class="form-label">状态</label>
               <select class="form-select" id="modalStatus">
-                <option value="1" ${isEdit && item.status === 1 ? 'selected' : !isEdit ? 'selected' : ''}>启用</option>
-                <option value="0" ${isEdit && item.status === 0 ? 'selected' : ''}>禁用</option>
+                <option value="ON" ${isEdit && item.status === 'ON' ? 'selected' : !isEdit ? 'selected' : ''}>启用</option>
+                <option value="OFF" ${isEdit && item.status === 'OFF' ? 'selected' : ''}>禁用</option>
               </select>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">数值类型</label>
               <select class="form-select" id="modalValueType">
-                <option value="INT" ${isEdit && item.valueType === 'INT' ? 'selected' : !isEdit ? 'selected' : ''}>INT</option>
-                <option value="FLOAT" ${isEdit && item.valueType === 'FLOAT' ? 'selected' : ''}>FLOAT</option>
+                <option value="INT" ${isEdit && item.valueType === 'INT' ? 'selected' : !isEdit ? 'selected' : ''}>布尔型</option>
+                <option value="FLOAT" ${isEdit && item.valueType === 'FLOAT' ? 'selected' : ''}>浮点型</option>
               </select>
             </div>
           </div>
@@ -341,7 +387,8 @@ const MonitorConfigPage = {
       monitorName: document.getElementById('modalMonitorName').value.trim(),
       deviceId: document.getElementById('modalDeviceId').value.trim(),
       deviceName: document.getElementById('modalDeviceName').value.trim(),
-      status: parseInt(document.getElementById('modalStatus').value),
+      permission: document.getElementById('modalPermission').value,
+      status: document.getElementById('modalStatus').value,
       valueType: document.getElementById('modalValueType').value,
     };
 
@@ -375,7 +422,7 @@ const MonitorConfigPage = {
   async switchStatus(monitorId, status) {
     try {
       await API.monitorConfig.switchStatus(monitorId, status);
-      Toast.success(status === 1 ? '已启用' : '已禁用');
+      Toast.success(status === 'ON' ? '已启用' : '已禁用');
       this.loadTable();
     } catch (err) {
       Toast.error(err.message || '状态切换失败');

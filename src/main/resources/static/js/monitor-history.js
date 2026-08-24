@@ -47,13 +47,17 @@ const MonitorHistoryPage = {
     this.initChart();
   },
 
-  // 加载监控点下拉选项
+  // 加载设备+监控点级联下拉（图表和表格各一组）
   async loadMonitorOptions() {
-    const chartSel = document.getElementById('chartMonitorId');
-    const tableSel = document.getElementById('tableSearchMonitorId');
     await Promise.all([
-      MonitorOptions.fillSelect(chartSel, '请选择监控点', 'monitorId'),
-      MonitorOptions.fillSelect(tableSel, '监控点', 'monitorId'),
+      MonitorOptions.setupCascade('chartDeviceId', 'chartMonitorId', {
+        allDeviceLabel: '全部设备',
+        monitorValueField: 'monitorId',
+      }),
+      MonitorOptions.setupCascade('tableDeviceId', 'tableSearchMonitorId', {
+        allDeviceLabel: '全部设备',
+        monitorValueField: 'monitorId',
+      }),
     ]);
   },
 
@@ -66,19 +70,20 @@ const MonitorHistoryPage = {
           <span class="card-title">趋势图表</span>
         </div>
         <div class="card-body">
-          <div class="search-bar">
-            <select class="form-select" id="chartMonitorId" style="width:200px;flex-shrink:0"><option value="">请选择监控点</option></select>
-            <select class="form-select" id="chartTimeMode" style="width:130px;flex-shrink:0">
+          <div class="search-bar" style="flex-wrap:nowrap;white-space:nowrap">
+            <select class="form-select" id="chartDeviceId" style="width:120px;flex-shrink:0"><option value="">全部设备</option></select>
+            <select class="form-select" id="chartMonitorId" style="width:130px;flex-shrink:0" disabled><option value="">选择设备</option></select>
+            <select class="form-select" id="chartTimeMode" style="width:100px;flex-shrink:0">
               <option value="preset">预设范围</option>
               <option value="custom">自定义时间</option>
             </select>
-            <select class="form-select" id="chartTimeRange" style="width:130px;flex-shrink:0;${this.state.chartTimeMode === 'preset' ? '' : 'display:none'}">
+            <select class="form-select" id="chartTimeRange" style="width:100px;flex-shrink:0;${this.state.chartTimeMode === 'preset' ? '' : 'display:none'}">
               ${this.timeRanges.map(r => `<option value="${r.hours}" ${r.hours === this.state.chartHours ? 'selected' : ''}>${r.label}</option>`).join('')}
             </select>
             <div id="chartCustomRange" class="date-range-group" style="${this.state.chartTimeMode === 'custom' ? '' : 'display:none'}">
-              <input type="datetime-local" class="form-input" id="chartStartDate" value="${this.state.chartStartTime}" style="min-width:170px;flex-shrink:0">
+              <input type="datetime-local" class="form-input" id="chartStartDate" value="${this.state.chartStartTime}" style="width:160px;flex-shrink:0">
               <span class="date-separator" style="flex-shrink:0">至</span>
-              <input type="datetime-local" class="form-input" id="chartEndDate" value="${this.state.chartEndTime}" style="min-width:170px;flex-shrink:0">
+              <input type="datetime-local" class="form-input" id="chartEndDate" value="${this.state.chartEndTime}" style="width:160px;flex-shrink:0">
             </div>
             <button class="btn btn-primary btn-sm" id="btnQueryChart" style="flex-shrink:0">查询图表</button>
           </div>
@@ -103,10 +108,11 @@ const MonitorHistoryPage = {
         </div>
         <div class="card-body">
           <div class="search-bar">
-            <select class="form-select" id="tableSearchMonitorId" style="width:200px;flex-shrink:0"><option value="">监控点</option></select>
-            <input type="datetime-local" class="form-input" id="tableStartDate" value="${this.state.tableStartTime}" style="min-width:170px;flex-shrink:0" title="开始时间">
+            <select class="form-select" id="tableDeviceId" style="width:120px;flex-shrink:0"><option value="">全部设备</option></select>
+            <select class="form-select" id="tableSearchMonitorId" style="width:130px;flex-shrink:0" disabled><option value="">选择设备</option></select>
+            <input type="datetime-local" class="form-input" id="tableStartDate" value="${this.state.tableStartTime}" style="width:160px;flex-shrink:0" title="开始时间">
             <span class="date-separator" style="flex-shrink:0">至</span>
-            <input type="datetime-local" class="form-input" id="tableEndDate" value="${this.state.tableEndTime}" style="min-width:170px;flex-shrink:0" title="结束时间">
+            <input type="datetime-local" class="form-input" id="tableEndDate" value="${this.state.tableEndTime}" style="width:160px;flex-shrink:0" title="结束时间">
             <button class="btn btn-primary btn-sm" id="btnTableSearch" style="flex-shrink:0">搜索</button>
             <button class="btn btn-secondary btn-sm" id="btnTableReset" style="flex-shrink:0">重置</button>
           </div>
@@ -154,7 +160,8 @@ const MonitorHistoryPage = {
       this.state.tableStartTime = '';
       this.state.tableEndTime = '';
       this.state.pageNum = 1;
-      document.getElementById('tableSearchMonitorId').value = '';
+      document.getElementById('tableDeviceId').value = '';
+      document.getElementById('tableDeviceId').dispatchEvent(new Event('change'));
       document.getElementById('tableStartDate').value = '';
       document.getElementById('tableEndDate').value = '';
       this.loadTable();

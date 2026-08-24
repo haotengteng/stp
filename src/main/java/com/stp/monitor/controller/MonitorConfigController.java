@@ -78,7 +78,7 @@ public class MonitorConfigController {
     }
 
     @PostMapping("/{monitorId}/switch")
-    public Result<Void> switchStatus(@PathVariable String monitorId, @RequestParam Integer status) {
+    public Result<Void> switchStatus(@PathVariable String monitorId, @RequestParam String status) {
         monitorConfigService.switchStatus(monitorId, status);
         monitorConfigCache.reload();
         return Result.success();

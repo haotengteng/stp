@@ -129,4 +129,10 @@ const API = {
   mqtt: {
     publish: (monitorId, value) => API.post('/api/mqtt/publish', { monitorId, value }),
   },
+
+  // ── Device Info API ──
+  device: {
+    list: () => API.get('/api/device/list'),
+    page: (pageNum, pageSize) => API.get('/api/device/page', { pageNum, pageSize }),
+  },
 };

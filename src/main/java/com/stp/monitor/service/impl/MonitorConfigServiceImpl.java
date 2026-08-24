@@ -53,27 +53,27 @@ public class MonitorConfigServiceImpl implements MonitorConfigService {
     }
 
     @Override
-    public List<MonitorConfig> findByStatus(Integer status) {
+    public List<MonitorConfig> findByStatus(String status) {
         return monitorConfigRepository.findByStatus(status);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public boolean switchStatus(String monitorId, Integer status) {
-        if (status == null || (status != 0 && status != 1)) {
-            throw new IllegalArgumentException("状态只能为 0（禁用）或 1（启用）");
+    public boolean switchStatus(String monitorId, String status) {
+        if (!"ON".equals(status) && !"OFF".equals(status)) {
+            throw new IllegalArgumentException("状态只能为 ON（启用）或 OFF（禁用）");
         }
         MonitorConfig config = monitorConfigRepository.findByMonitorId(monitorId)
                 .orElseThrow(() -> new IllegalArgumentException("监控点不存在：" + monitorId));
-        Integer preStatus = config.getStatus();
+        String preStatus = config.getStatus();
         config.setStatus(status);
         monitorConfigRepository.save(config);
 
         MonitorOperationHistory history = new MonitorOperationHistory();
         history.setMonitorId(monitorId);
         history.setMonitorName(config.getMonitorName());
-        history.setPreValue(String.valueOf(preStatus));
-        history.setValue(String.valueOf(status));
+        history.setPreValue(preStatus);
+        history.setValue(status);
         history.setStatus("1"); // 操作成功
         operationHistoryRepository.save(history);
 

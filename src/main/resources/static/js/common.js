@@ -128,7 +128,7 @@ const Utils = {
 
   statusTag(status, type = 'monitor') {
     const maps = {
-      monitor: { 0: { cls: 'tag-default', text: '禁用' }, 1: { cls: 'tag-success', text: '启用' } },
+      monitor: { OFF: { cls: 'tag-default', text: '禁用' }, ON: { cls: 'tag-success', text: '启用' } },
       operation: { 0: { cls: 'tag-danger', text: '失败' }, 1: { cls: 'tag-success', text: '成功' } },
       alarm: { 0: { cls: 'tag-danger', text: '未处理' }, 1: { cls: 'tag-success', text: '已处理' } },
     };
@@ -158,59 +158,147 @@ const Utils = {
   },
 };
 
-// ── 监控点下拉选项加载器 ──
+// ── 设备 & 监控点下拉选项加载器 ──
 const MonitorOptions = {
-  _cache: null,
-  _promise: null,
+  _deviceCache: null,
+  _devicePromise: null,
+  _monitorCache: null,
+  _monitorPromise: null,
+
+  /**
+   * 获取所有设备列表（带缓存）
+   * @returns {Promise<Array<{deviceId, deviceName}>>}
+   */
+  loadDevices() {
+    if (this._deviceCache) return Promise.resolve(this._deviceCache);
+    if (this._devicePromise) return this._devicePromise;
+    this._devicePromise = API.device.list().then(list => {
+      this._deviceCache = (list || []).map(item => ({
+        deviceId: item.deviceId,
+        deviceName: item.deviceName,
+      }));
+      return this._deviceCache;
+    }).catch(err => {
+      Toast.error('加载设备列表失败: ' + err.message);
+      this._deviceCache = [];
+      return [];
+    }).finally(() => {
+      this._devicePromise = null;
+    });
+    return this._devicePromise;
+  },
 
   /**
    * 获取所有监控点列表（带缓存）
    * @returns {Promise<Array<{monitorId, monitorName, deviceId, deviceName}>>}
    */
-  load() {
-    if (this._cache) return Promise.resolve(this._cache);
-    if (this._promise) return this._promise;
-    this._promise = API.monitorConfig.cache().then(list => {
-      this._cache = (list || []).map(item => ({
+  loadMonitors() {
+    if (this._monitorCache) return Promise.resolve(this._monitorCache);
+    if (this._monitorPromise) return this._monitorPromise;
+    this._monitorPromise = API.monitorConfig.cache().then(list => {
+      this._monitorCache = (list || []).map(item => ({
         monitorId: item.monitorId,
         monitorName: item.monitorName,
         deviceId: item.deviceId,
         deviceName: item.deviceName,
       }));
-      return this._cache;
+      return this._monitorCache;
     }).catch(err => {
       Toast.error('加载监控点列表失败: ' + err.message);
-      this._cache = [];
+      this._monitorCache = [];
       return [];
     }).finally(() => {
-      this._promise = null;
+      this._monitorPromise = null;
     });
-    return this._promise;
+    return this._monitorPromise;
   },
 
   /**
-   * 填充 select 下拉框
+   * 填充设备下拉框
    * @param {HTMLSelectElement} selectEl - 目标 select 元素
-   * @param {string} allLabel - 全部选项的标签，传 null 则不添加全部选项
-   * @param {string} valueField - 选项 value 使用的字段: 'monitorId' | 'monitorName'
+   * @param {string} allLabel - 全部选项的标签，传 null 则不添加
    */
-  async fillSelect(selectEl, allLabel = '监控点', valueField = 'monitorId') {
+  async fillDeviceSelect(selectEl, allLabel = '全部设备') {
     if (!selectEl) return;
-    const list = await this.load();
+    const list = await this.loadDevices();
     const currentVal = selectEl.value;
     let html = '';
     if (allLabel !== null) {
       html += `<option value="">${allLabel}</option>`;
     }
-    html += list.map(m => `<option value="${Utils.escape(m[valueField])}">${Utils.escape(m.monitorName)}</option>`).join('');
+    html += list.map(d => `<option value="${Utils.escape(d.deviceId)}">${Utils.escape(d.deviceName)}</option>`).join('');
     selectEl.innerHTML = html;
-    // 尝试恢复之前选中的值
     if (currentVal) selectEl.value = currentVal;
+  },
+
+  /**
+   * 填充监控点下拉框（可按设备ID过滤）
+   * @param {HTMLSelectElement} selectEl - 目标 select 元素
+   * @param {string} allLabel - 全部选项的标签，传 null 则不添加
+   * @param {string} valueField - 选项 value 使用的字段: 'monitorId' | 'monitorName'
+   * @param {string} deviceId - 可选，按设备过滤监控点
+   * @param {boolean} disabled - 是否禁用下拉框
+   */
+  async fillMonitorSelect(selectEl, allLabel = '监控点', valueField = 'monitorId', deviceId = null, disabled = false) {
+    if (!selectEl) return;
+    let html = '';
+    if (allLabel !== null) {
+      html += deviceId
+        ? `<option value="">${allLabel}</option>`
+        : `<option value="" disabled selected>${allLabel}</option>`;
+    }
+    if (deviceId) {
+      let list = await this.loadMonitors();
+      list = list.filter(m => m.deviceId === deviceId);
+      html += list.map(m => `<option value="${Utils.escape(m[valueField])}">${Utils.escape(m.monitorName)}</option>`).join('');
+    }
+    selectEl.innerHTML = html;
+    selectEl.disabled = disabled || !deviceId;
+  },
+
+  /**
+   * 初始化设备+监控点级联下拉
+   * @param {string} deviceSelectId - 设备下拉框的 DOM ID
+   * @param {string} monitorSelectId - 监控点下拉框的 DOM ID
+   * @param {object} opts - { allDeviceLabel, monitorValueField }
+   */
+  async setupCascade(deviceSelectId, monitorSelectId, opts = {}) {
+    const deviceSel = document.getElementById(deviceSelectId);
+    const monitorSel = document.getElementById(monitorSelectId);
+    if (!deviceSel || !monitorSel) return;
+
+    const allDeviceLabel = opts.allDeviceLabel || '全部设备';
+    const monitorValueField = opts.monitorValueField || 'monitorId';
+
+    // 加载设备下拉
+    await this.fillDeviceSelect(deviceSel, allDeviceLabel);
+
+    // 初始状态：未选设备，监控点禁用，显示"选择设备"
+    await this.fillMonitorSelect(monitorSel, '选择设备', monitorValueField, null, true);
+
+    // 设备 change -> 重新加载监控点
+    deviceSel.addEventListener('change', async () => {
+      const devId = deviceSel.value;
+      monitorSel.value = '';
+      if (devId) {
+        await this.fillMonitorSelect(monitorSel, '全部监控点', monitorValueField, devId, false);
+      } else {
+        await this.fillMonitorSelect(monitorSel, '选择设备', monitorValueField, null, true);
+      }
+      monitorSel.dispatchEvent(new Event('change'));
+    });
   },
 
   /** 清除缓存（增删改后调用以刷新下拉数据） */
   refresh() {
-    this._cache = null;
+    this._deviceCache = null;
+    this._monitorCache = null;
+  },
+
+  /** 旧接口兼容 */
+  load() { return this.loadMonitors(); },
+  async fillSelect(selectEl, allLabel = '监控点', valueField = 'monitorId') {
+    return this.fillMonitorSelect(selectEl, allLabel, valueField, null, false);
   },
 };
 

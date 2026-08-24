@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/device")
 public class DeviceInfoController {
@@ -22,6 +24,11 @@ public class DeviceInfoController {
                                          @RequestParam(defaultValue = "10") int pageSize) {
         Page<DeviceInfo> page = deviceInfoService.findAll(PageRequest.of(pageNum - 1, pageSize));
         return Result.success(page);
+    }
+
+    @GetMapping("/list")
+    public Result<List<DeviceInfo>> list() {
+        return Result.success(deviceInfoService.findAll());
     }
 
     @GetMapping("/{id}")

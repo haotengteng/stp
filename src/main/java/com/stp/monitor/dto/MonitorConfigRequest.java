@@ -13,7 +13,9 @@ public class MonitorConfigRequest {
 
     private String deviceName;
 
-    private Integer status;
+    private String permission;
+
+    private String status;
 
     private String valueType;
 }

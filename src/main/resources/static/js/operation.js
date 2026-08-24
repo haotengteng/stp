@@ -18,7 +18,8 @@
     total: 0,
     totalPages: 0,
     loading: false,
-    monitorName: '',     // selected monitor name from dropdown
+    filterDeviceId: '',   // selected device id
+    filterMonitorName: '', // selected monitor name from dropdown
     statusFilter: '',    // '' = all, '1' = success, '0' = fail
   };
 
@@ -42,15 +43,16 @@
           '</button>' +
         '</div>' +
         '<div class="card-body">' +
-          '<div class="search-bar">' +
-            '<select class="form-select" id="monitorSelect" style="width:200px;flex-shrink:0"><option value="">加载中...</option></select>' +
-            '<select class="form-select" id="statusSelect" style="width:130px;flex-shrink:0">' +
+          '<div class="search-bar" style="flex-wrap:nowrap;white-space:nowrap">' +
+            '<select class="form-select" id="deviceSelect" style="width:120px;flex-shrink:0"><option value="">全部设备</option></select>' +
+            '<select class="form-select" id="monitorSelect" style="width:130px;flex-shrink:0" disabled><option value="">选择设备</option></select>' +
+            '<select class="form-select" id="statusSelect" style="width:90px;flex-shrink:0">' +
               '<option value="">状态</option>' +
               '<option value="1">成功</option>' +
               '<option value="0">失败</option>' +
             '</select>' +
-            '<button class="btn btn-primary btn-sm" id="searchBtn">搜索</button>' +
-            '<button class="btn btn-ghost btn-sm" id="resetBtn">重置</button>' +
+            '<button class="btn btn-primary btn-sm" id="searchBtn" style="flex-shrink:0">搜索</button>' +
+            '<button class="btn btn-ghost btn-sm" id="resetBtn" style="flex-shrink:0">重置</button>' +
           '</div>' +
           '<div id="tableContainer"></div>' +
         '</div>' +
@@ -59,27 +61,32 @@
   }
 
   async function loadMonitorOptions() {
-    var sel = document.getElementById('monitorSelect');
-    await MonitorOptions.fillSelect(sel, '监控点', 'monitorName');
+    await MonitorOptions.setupCascade('deviceSelect', 'monitorSelect', {
+      allDeviceLabel: '全部设备',
+      monitorValueField: 'monitorName',
+    });
   }
 
   function bindEvents() {
     document.getElementById('searchBtn').addEventListener('click', function () {
-      state.monitorName = document.getElementById('monitorSelect').value;
+      state.filterDeviceId = document.getElementById('deviceSelect').value;
+      state.filterMonitorName = document.getElementById('monitorSelect').value;
       state.statusFilter = document.getElementById('statusSelect').value;
       renderTable();
     });
 
     document.getElementById('resetBtn').addEventListener('click', function () {
-      document.getElementById('monitorSelect').value = '';
+      document.getElementById('deviceSelect').value = '';
+      document.getElementById('deviceSelect').dispatchEvent(new Event('change'));
       document.getElementById('statusSelect').value = '';
-      state.monitorName = '';
+      state.filterDeviceId = '';
+      state.filterMonitorName = '';
       state.statusFilter = '';
       renderTable();
     });
 
     document.getElementById('monitorSelect').addEventListener('change', function () {
-      state.monitorName = this.value;
+      state.filterMonitorName = this.value;
       renderTable();
     });
 
@@ -122,7 +129,7 @@
   }
 
   function getFilteredList() {
-    var mn = state.monitorName;
+    var mn = state.filterMonitorName;
     var sf = state.statusFilter;
     return state.list.filter(function (o) {
       var matchName = !mn || (o.monitorName || '') === mn;
@@ -145,7 +152,7 @@
 
     var list = getFilteredList();
     if (!list.length) {
-      var emptyText = state.monitorName || state.statusFilter !== ''
+      var emptyText = state.filterMonitorName || state.statusFilter !== ''
         ? '没有匹配的操作记录'
         : '暂无操作记录';
       container.innerHTML = renderEmpty(emptyText);

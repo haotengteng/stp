@@ -20,7 +20,7 @@ public interface MonitorConfigService {
 
     List<MonitorConfig> findByDeviceId(String deviceId);
 
-    List<MonitorConfig> findByStatus(Integer status);
+    List<MonitorConfig> findByStatus(String status);
 
-    boolean switchStatus(String monitorId, Integer status);
+    boolean switchStatus(String monitorId, String status);
 }

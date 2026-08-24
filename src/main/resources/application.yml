@@ -22,8 +22,8 @@ mqtt:
   enabled: true
   broker-url: tcp://broker.emqx.io:1883
   client-id: stp-monitor-client
-  username:
-  password:
+  username: admin
+  password: '!Abcd.1234@'
   subscribe-topic: /UploadTopicNB
   resp-topic: /RespTopicNB
   publish-topic: /DownloadTopicNB

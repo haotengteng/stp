@@ -14,5 +14,5 @@ public interface MonitorConfigRepository extends JpaRepository<MonitorConfig, Lo
 
     List<MonitorConfig> findByDeviceId(String deviceId);
 
-    List<MonitorConfig> findByStatus(Integer status);
+    List<MonitorConfig> findByStatus(String status);
 }

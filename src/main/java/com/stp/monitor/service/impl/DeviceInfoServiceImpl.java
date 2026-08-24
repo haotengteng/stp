@@ -8,6 +8,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class DeviceInfoServiceImpl implements DeviceInfoService {
 
@@ -27,6 +29,11 @@ public class DeviceInfoServiceImpl implements DeviceInfoService {
     @Override
     public Page<DeviceInfo> findAll(Pageable pageable) {
         return deviceInfoRepository.findAll(pageable);
+    }
+
+    @Override
+    public List<DeviceInfo> findAll() {
+        return deviceInfoRepository.findAll();
     }
 
     @Override

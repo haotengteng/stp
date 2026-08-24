@@ -7,7 +7,6 @@ import com.stp.monitor.service.MonitorConfigCache;
 import com.stp.monitor.service.MonitorOperationHistoryService;
 import com.stp.monitor.service.MonitorRuntimeConfig;
 
-import lombok.var;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -115,7 +114,7 @@ public class MqttPublishHandler {
     }
 
     /**
-     * 根据监控点配置的 valueType 将字符串 value 转换为 Integer 或 Float
+     * 根据监控点配置的 valueType（INT-布尔型，FLOAT-浮点型）将字符串 value 转换为 Integer 或 Float
      *
      * @param monitorId 监控点ID
      * @param value     原始字符串值

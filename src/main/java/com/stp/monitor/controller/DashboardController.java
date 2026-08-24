@@ -48,7 +48,7 @@ public class DashboardController {
 
         List<MonitorConfig> configs = monitorConfigService.findAll(PageRequest.of(0, Integer.MAX_VALUE)).getContent();
         long totalMonitors = configs.size();
-        long enabledMonitors = configs.stream().filter(c -> c.getStatus() != null && c.getStatus() == 1).count();
+        long enabledMonitors = configs.stream().filter(c -> c.getStatus() != null && "ON".equals(c.getStatus())).count();
         vo.setTotalMonitors(totalMonitors);
         vo.setEnabledMonitors(enabledMonitors);
         vo.setDisabledMonitors(totalMonitors - enabledMonitors);

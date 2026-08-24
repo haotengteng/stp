@@ -32,10 +32,12 @@
     bindEvents();
   });
 
-  // ── 加载监控点下拉选项 ──
+  // ── 加载设备+监控点级联下拉 ──
   async function loadMonitorOptions() {
-    var sel = document.getElementById('searchMonitorSelect');
-    if (sel) await MonitorOptions.fillSelect(sel, '监控点', 'monitorName');
+    await MonitorOptions.setupCascade('deviceSelect', 'searchMonitorSelect', {
+      allDeviceLabel: '全部设备',
+      monitorValueField: 'monitorName',
+    });
   }
 
   // ── 页面结构 ──
@@ -77,15 +79,16 @@
         </div>
         <div class="card-body">
           <!-- 搜索栏 -->
-          <div class="search-bar">
-            <select class="form-select" id="searchMonitorSelect" style="width:200px;flex-shrink:0"><option value="">监控点</option></select>
-            <select class="form-select" id="statusFilter" style="width:130px;flex-shrink:0">
+          <div class="search-bar" style="flex-wrap:nowrap;white-space:nowrap">
+            <select class="form-select" id="deviceSelect" style="width:120px;flex-shrink:0"><option value="">全部设备</option></select>
+            <select class="form-select" id="searchMonitorSelect" style="width:130px;flex-shrink:0" disabled><option value="">选择设备</option></select>
+            <select class="form-select" id="statusFilter" style="width:90px;flex-shrink:0">
               <option value="">状态</option>
               <option value="0">未处理</option>
               <option value="1">已处理</option>
             </select>
-            <button class="btn btn-primary btn-sm" id="searchBtn">搜索</button>
-            <button class="btn btn-ghost btn-sm" id="resetBtn">重置</button>
+            <button class="btn btn-primary btn-sm" id="searchBtn" style="flex-shrink:0">搜索</button>
+            <button class="btn btn-ghost btn-sm" id="resetBtn" style="flex-shrink:0">重置</button>
           </div>
 
           <!-- 表格 -->
@@ -251,7 +254,8 @@
     });
 
     document.getElementById('resetBtn').addEventListener('click', function () {
-      document.getElementById('searchMonitorSelect').value = '';
+      document.getElementById('deviceSelect').value = '';
+      document.getElementById('deviceSelect').dispatchEvent(new Event('change'));
       document.getElementById('statusFilter').value = '';
       state.searchMonitorName = '';
       state.filterStatus = '';
