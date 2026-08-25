@@ -152,6 +152,22 @@ const Utils = {
     };
   },
 
+  /** 根据 valueType/valueDesc 渲染监控值：INT 且有值描述时显示描述，否则显示原值 */
+  renderMonitorValue(monitorValue, valueType, valueDesc) {
+    const v = monitorValue;
+    if (v === null || v === undefined || v === '') return '';
+    if (valueType === 'INT' && valueDesc) {
+      try {
+        const map = typeof valueDesc === 'string' ? JSON.parse(valueDesc) : valueDesc;
+        const key = String(v).trim();
+        if (map && Object.prototype.hasOwnProperty.call(map, key)) {
+          return this.escape(map[key]);
+        }
+      } catch (e) { /* 解析失败则回退为原始值 */ }
+    }
+    return this.escape(v);
+  },
+
   getInitials(name) {
     if (!name) return 'U';
     return name.slice(0, 1).toUpperCase();
@@ -201,6 +217,8 @@ const MonitorOptions = {
         monitorName: item.monitorName,
         deviceId: item.deviceId,
         deviceName: item.deviceName,
+        valueType: item.valueType,
+        valueDesc: item.valueDesc,
       }));
       return this._monitorCache;
     }).catch(err => {

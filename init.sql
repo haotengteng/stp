@@ -43,6 +43,8 @@ CREATE TABLE `monitor_config` (
   `permission` VARCHAR(2) NOT NULL DEFAULT 'rw' COMMENT '权限控制：r-只读，rw-读写',
   `status` VARCHAR(3) NOT NULL DEFAULT 'ON' COMMENT '状态：OFF-禁用，ON-启用',
   `value_type` VARCHAR(20) NOT NULL DEFAULT 'INT' COMMENT '数值类型：INT-布尔型，FLOAT-浮点型',
+  `value_desc` VARCHAR(500) DEFAULT NULL COMMENT '值描述(JSON)，如 {"1":"故障","0":"正常"}，仅INT类型有效',
+  `show_type` VARCHAR(20) DEFAULT NULL COMMENT '显示方式：LIGHT-指示灯，SWITCH-开关，空-默认显示值',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),

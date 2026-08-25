@@ -36,6 +36,14 @@ public class MonitorConfig {
     @Column(name = "value_type")
     private String valueType;
 
+    /** 值描述(JSON)，如 {"1":"故障","0":"正常"}，仅对 INT 类型有效 */
+    @Column(name = "value_desc")
+    private String valueDesc;
+
+    /** 显示方式：LIGHT-指示灯，SWITCH-开关，空-默认显示值 */
+    @Column(name = "show_type")
+    private String showType;
+
     @Column(name = "create_time")
     private LocalDateTime createTime;
 

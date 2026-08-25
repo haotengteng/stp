@@ -60,6 +60,10 @@ public class DashboardController {
 
         List<MonitorLatestVo> latestList = new ArrayList<>();
         for (MonitorConfig config : configs) {
+            // 禁用(OFF)状态的监控点不在实时监控页面展示
+            if (config.getStatus() == null || !"ON".equals(config.getStatus())) {
+                continue;
+            }
             List<MonitorHistoryInfo> historyList = monitorHistoryInfoService.findLatestByMonitorId(config.getMonitorId());
             MonitorHistoryInfo latest = historyList.isEmpty() ? null : historyList.get(0);
             MonitorLatestVo latestVo = new MonitorLatestVo();
@@ -67,6 +71,10 @@ public class DashboardController {
             latestVo.setMonitorName(config.getMonitorName());
             latestVo.setDeviceId(config.getDeviceId());
             latestVo.setDeviceName(config.getDeviceName());
+            latestVo.setValueType(config.getValueType());
+            latestVo.setValueDesc(config.getValueDesc());
+            latestVo.setShowType(config.getShowType());
+            latestVo.setPermission(config.getPermission());
             if (latest != null) {
                 latestVo.setLatestValue(latest.getMonitorValue());
                 latestVo.setUpdateTime(latest.getCreateTime());

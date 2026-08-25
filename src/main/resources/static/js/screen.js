@@ -29,7 +29,10 @@
     alarmStatsData: null,
     trendData: {},   // monitorId -> { name, values: [{time, value}] }
     maxTrendPoints: 15,
+    streamData: [],  // latest real-time records
   };
+
+  let monitorConfigMap = {}; // monitorId -> {valueType, valueDesc}
 
   // ── Init ──
   document.addEventListener('DOMContentLoaded', function () {
@@ -65,6 +68,14 @@
 
     // Handle resize
     window.addEventListener('resize', debounceResize);
+
+    // 预加载监控点配置，用于数据流按值显示描述
+    MonitorOptions.loadMonitors().then(list => {
+      monitorConfigMap = {};
+      (list || []).forEach(m => { monitorConfigMap[m.monitorId] = m; });
+      // 若已加载实时数据流，补一次渲染以应用配置映射
+      if (state.streamData && state.streamData.length) renderDataStream(state.streamData);
+    });
   });
 
   // ── Chart Initialization ──
@@ -134,7 +145,8 @@
   async function loadRealtimeStream() {
     try {
       const list = await API.dashboard.realtime(30);
-      renderDataStream(list || []);
+      state.streamData = list || [];
+      renderDataStream(state.streamData);
     } catch (err) {
       Toast.error('加载实时数据流失败: ' + err.message);
     }
@@ -213,7 +225,7 @@
         <tr>
           <td class="col-monitor-name">${Utils.escape(m.monitorName || m.monitorId)}</td>
           <td class="col-device">${Utils.escape(m.deviceName || '')}</td>
-          <td class="col-value">${hasValue ? Utils.escape(m.latestValue) : '--'}</td>
+          <td class="col-value">${hasValue ? Utils.renderMonitorValue(m.latestValue, m.valueType, m.valueDesc) : '--'}</td>
           <td class="col-time">${m.updateTime ? Utils.formatTime(m.updateTime) : '--'}</td>
         </tr>
       `;
@@ -247,10 +259,11 @@
     }
 
     body.innerHTML = list.map(item => {
+      const cfg = monitorConfigMap[item.monitorId];
       return `
         <div class="stream-item">
           <span class="stream-item-name">${Utils.escape(item.monitorName)}</span>
-          <span class="stream-item-value">${Utils.escape(item.monitorValue)}</span>
+          <span class="stream-item-value">${Utils.renderMonitorValue(item.monitorValue, cfg && cfg.valueType, cfg && cfg.valueDesc)}</span>
           <span class="stream-item-time">${Utils.formatTime(item.createTime)}</span>
         </div>
       `;

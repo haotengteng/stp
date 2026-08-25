@@ -358,6 +358,20 @@ const MonitorConfigPage = {
                 <option value="FLOAT" ${isEdit && item.valueType === 'FLOAT' ? 'selected' : ''}>浮点型</option>
               </select>
             </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">值描述(JSON)</label>
+              <input type="text" class="form-input" id="modalValueDesc" placeholder='如 {"1":"故障","0":"正常"}' value="${isEdit && item.valueDesc ? Utils.escape(item.valueDesc) : ''}">
+              <span style="font-size:var(--font-size-xs);color:var(--color-text-3)">仅布尔型(INT)有效，key 为取值，value 为对应描述</span>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">显示方式</label>
+              <select class="form-select" id="modalShowType">
+                <option value="" ${!isEdit || !item.showType ? 'selected' : ''}>默认(直接显示值)</option>
+                <option value="LIGHT" ${isEdit && item.showType === 'LIGHT' ? 'selected' : ''}>指示灯</option>
+                <option value="SWITCH" ${isEdit && item.showType === 'SWITCH' ? 'selected' : ''}>开关</option>
+              </select>
+              <span style="font-size:var(--font-size-xs);color:var(--color-text-3)">指示灯/开关仅对取值 1/0 生效</span>
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="MonitorConfigPage.closeModal()">取消</button>
@@ -390,6 +404,8 @@ const MonitorConfigPage = {
       permission: document.getElementById('modalPermission').value,
       status: document.getElementById('modalStatus').value,
       valueType: document.getElementById('modalValueType').value,
+      valueDesc: document.getElementById('modalValueDesc').value.trim(),
+      showType: document.getElementById('modalShowType').value,
     };
 
     // Validation

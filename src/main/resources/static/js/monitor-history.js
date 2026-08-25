@@ -31,6 +31,8 @@ const MonitorHistoryPage = {
     loading: false,
   },
 
+  monitorConfigMap: {}, // monitorId -> {valueType, valueDesc}
+
   // 时间预设选项
   timeRanges: [
     { label: '最近1小时', hours: 1 },
@@ -45,6 +47,11 @@ const MonitorHistoryPage = {
     this.loadMonitorOptions();
     this.loadTable();
     this.initChart();
+    // 预加载监控点配置，用于历史表格按值显示描述
+    MonitorOptions.loadMonitors().then(list => {
+      this.monitorConfigMap = {};
+      (list || []).forEach(m => { this.monitorConfigMap[m.monitorId] = m; });
+    });
   },
 
   // 加载设备+监控点级联下拉（图表和表格各一组）
@@ -478,18 +485,21 @@ const MonitorHistoryPage = {
       return;
     }
 
-    const rows = this.state.list.map(item => `
+    const rows = this.state.list.map(item => {
+      const cfg = this.monitorConfigMap[item.monitorId];
+      return `
       <tr>
         <td>${Utils.escape(item.id)}</td>
         <td style="font-family:var(--font-mono)">${Utils.escape(item.monitorId)}</td>
         <td>${Utils.escape(item.monitorName)}</td>
-        <td style="font-family:var(--font-mono);font-weight:var(--font-weight-medium)">${Utils.escape(item.monitorValue)}</td>
+        <td style="font-family:var(--font-mono);font-weight:var(--font-weight-medium)">${Utils.renderMonitorValue(item.monitorValue, cfg && cfg.valueType, cfg && cfg.valueDesc)}</td>
         <td style="white-space:nowrap">${Utils.formatDateTime(item.createTime)}</td>
         <td style="white-space:nowrap">
           <button class="btn btn-ghost btn-sm text-danger" onclick="MonitorHistoryPage.remove(${item.id})">删除</button>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     container.innerHTML = `
       <table class="data-table">
