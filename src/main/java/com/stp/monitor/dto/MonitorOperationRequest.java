@@ -15,5 +15,7 @@ public class MonitorOperationRequest {
 
     private Integer status;
 
+    private String operator;
+
     private String operationId;
 }

@@ -6,10 +6,14 @@ import com.stp.monitor.entity.MonitorConfig;
 import com.stp.monitor.entity.MonitorHistoryInfo;
 import com.stp.monitor.service.AlarmRecordService;
 import com.stp.monitor.service.DeviceInfoService;
+import com.stp.monitor.service.MonitorConfigCache;
 import com.stp.monitor.service.MonitorConfigService;
 import com.stp.monitor.service.MonitorHistoryInfoService;
+import com.stp.monitor.service.MonitorRuntimeConfig;
 import com.stp.monitor.vo.DashboardOverviewVo;
 import com.stp.monitor.vo.MonitorLatestVo;
+import com.stp.monitor.util.NumberUtil;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -23,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -33,6 +38,9 @@ public class DashboardController {
 
     @Autowired
     private MonitorConfigService monitorConfigService;
+
+    @Autowired
+    private MonitorConfigCache monitorConfigCache;
 
     @Autowired
     private MonitorHistoryInfoService monitorHistoryInfoService;
@@ -64,8 +72,6 @@ public class DashboardController {
             if (config.getStatus() == null || !"ON".equals(config.getStatus())) {
                 continue;
             }
-            List<MonitorHistoryInfo> historyList = monitorHistoryInfoService.findLatestByMonitorId(config.getMonitorId());
-            MonitorHistoryInfo latest = historyList.isEmpty() ? null : historyList.get(0);
             MonitorLatestVo latestVo = new MonitorLatestVo();
             latestVo.setMonitorId(config.getMonitorId());
             latestVo.setMonitorName(config.getMonitorName());
@@ -75,9 +81,11 @@ public class DashboardController {
             latestVo.setValueDesc(config.getValueDesc());
             latestVo.setShowType(config.getShowType());
             latestVo.setPermission(config.getPermission());
-            if (latest != null) {
-                latestVo.setLatestValue(latest.getMonitorValue());
-                latestVo.setUpdateTime(latest.getCreateTime());
+            // 最新值改读缓存（MQTT 上送 / 操作切换时更新），避免依赖历史表的最新记录
+            MonitorRuntimeConfig runtime = monitorConfigCache.getByMonitorId(config.getMonitorId());
+            if (runtime != null) {
+                latestVo.setLatestValue(NumberUtil.round(runtime.getMonitorValue(), 2));
+                latestVo.setUpdateTime(runtime.getUpdateTime());
             }
             latestList.add(latestVo);
         }
@@ -90,7 +98,14 @@ public class DashboardController {
         List<MonitorHistoryInfo> list = monitorHistoryInfoService
                 .findAll(PageRequest.of(0, size, Sort.by(Sort.Direction.DESC, "createTime")))
                 .getContent();
-        return Result.success(list);
+        // 返回前对 monitor_value 四舍五入保留两位小数
+        List<MonitorHistoryInfo> rounded = list.stream().map(item -> {
+            MonitorHistoryInfo copy = new MonitorHistoryInfo();
+            BeanUtils.copyProperties(item, copy);
+            copy.setMonitorValue(NumberUtil.round(item.getMonitorValue(), 2));
+            return copy;
+        }).collect(Collectors.toList());
+        return Result.success(rounded);
     }
 
     @GetMapping("/alarms")

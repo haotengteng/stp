@@ -41,11 +41,30 @@ public class MqttPublishHandler {
     private MonitorOperationHistoryService monitorOperationHistoryService;
 
     /**
-     * 向默认下发 topic（/DownloadTopicNB）发送 JSON 消息
+     * 向默认下发 topic（/DownloadTopicNB）发送 JSON 消息，preValue 取缓存当前值
      */
     public void publish(String monitorId, String value) {
+        publish(monitorId, value, null, null);
+    }
+
+    /**
+     * 向默认下发 topic（/DownloadTopicNB）发送 JSON 消息
+     *
+     * @param preValue 操作前值，为空时回退取缓存当前值
+     */
+    public void publish(String monitorId, String value, String preValue) {
+        publish(monitorId, value, preValue, null);
+    }
+
+    /**
+     * 向默认下发 topic（/DownloadTopicNB）发送 JSON 消息
+     *
+     * @param preValue 操作前值，为空时回退取缓存当前值
+     * @param operator 操作人
+     */
+    public void publish(String monitorId, String value, String preValue, String operator) {
         String operationId = generateOperationId();
-        saveOperationHistory(monitorId, value, operationId);
+        saveOperationHistory(monitorId, value, preValue, operator, operationId);
         
         String payload = buildControlJson(monitorId, value, operationId);
         mqttOutputChannel.send(MessageBuilder.withPayload(payload).build());
@@ -57,7 +76,7 @@ public class MqttPublishHandler {
      */
     public void publish(String topic, String monitorId, String value) {
         String operationId = generateOperationId();
-        saveOperationHistory(monitorId, value, operationId);
+        saveOperationHistory(monitorId, value, null, null, operationId);
 
         String payload = buildControlJson(monitorId, value, operationId);
         mqttOutputChannel.send(MessageBuilder
@@ -100,17 +119,18 @@ public class MqttPublishHandler {
         return UUID.randomUUID().toString().replace("-", "");
     }
 
-    private void saveOperationHistory(String monitorId, String value, String operationId) {
+    private void saveOperationHistory(String monitorId, String value, String preValue, String operator, String operationId) {
         MonitorRuntimeConfig config = monitorConfigCache.getByMonitorId(monitorId);
         MonitorOperationHistory history = new MonitorOperationHistory();
         history.setMonitorId(monitorId);
         history.setMonitorName(config != null ? config.getMonitorName() : monitorId);
-        history.setPreValue(config != null ? config.getMonitorValue() : null);
+        history.setPreValue(preValue != null ? preValue : (config != null ? config.getMonitorValue() : null));
         history.setValue(value);
-        history.setOperationId(operationId);
         history.setStatus("1"); // 命令下发成功，最终结果由 MQTT 回执更新
+        history.setOperator(operator);
+        history.setOperationId(operationId);
         monitorOperationHistoryService.save(history);
-        log.info("MQTT 操作记录已保存，monitorId={}，operationId={}", monitorId, operationId);
+        log.info("MQTT 操作记录已保存，monitorId={}，operationId={}，operator={}", monitorId, operationId, operator);
     }
 
     /**

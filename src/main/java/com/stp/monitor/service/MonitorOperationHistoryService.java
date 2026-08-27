@@ -15,8 +15,6 @@ public interface MonitorOperationHistoryService {
 
     Page<MonitorOperationHistory> findAll(Pageable pageable);
 
-    void deleteById(Long id);
-
     List<MonitorOperationHistory> findByOperationId(String operationId);
 
     void updateByOperationId(String operationId, List<Map<String, String>> wDataList);

@@ -323,19 +323,19 @@ const MonitorConfigPage = {
           <div class="modal-body">
             <div class="form-group">
               <label class="form-label">监控点ID <span class="required">*</span></label>
-              <input type="text" class="form-input" id="modalMonitorId" placeholder="请输入监控点ID" value="${isEdit ? Utils.escape(item.monitorId) : ''}">
+              <input type="text" class="form-input" id="modalMonitorId" placeholder="请输入监控点ID" value="${isEdit ? Utils.attr(item.monitorId) : ''}">
             </div>
             <div class="form-group">
               <label class="form-label">监控点名称 <span class="required">*</span></label>
-              <input type="text" class="form-input" id="modalMonitorName" placeholder="请输入监控点名称" value="${isEdit ? Utils.escape(item.monitorName) : ''}">
+              <input type="text" class="form-input" id="modalMonitorName" placeholder="请输入监控点名称" value="${isEdit ? Utils.attr(item.monitorName) : ''}">
             </div>
             <div class="form-group">
               <label class="form-label">设备ID <span class="required">*</span></label>
-              <input type="text" class="form-input" id="modalDeviceId" placeholder="请输入设备ID" value="${isEdit ? Utils.escape(item.deviceId) : ''}">
+              <input type="text" class="form-input" id="modalDeviceId" placeholder="请输入设备ID" value="${isEdit ? Utils.attr(item.deviceId) : ''}">
             </div>
             <div class="form-group">
               <label class="form-label">设备名称 <span class="required">*</span></label>
-              <input type="text" class="form-input" id="modalDeviceName" placeholder="请输入设备名称" value="${isEdit ? Utils.escape(item.deviceName) : ''}">
+              <input type="text" class="form-input" id="modalDeviceName" placeholder="请输入设备名称" value="${isEdit ? Utils.attr(item.deviceName) : ''}">
             </div>
             <div class="form-group">
               <label class="form-label">权限控制</label>
@@ -360,7 +360,7 @@ const MonitorConfigPage = {
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">值描述(JSON)</label>
-              <input type="text" class="form-input" id="modalValueDesc" placeholder='如 {"1":"故障","0":"正常"}' value="${isEdit && item.valueDesc ? Utils.escape(item.valueDesc) : ''}">
+              <input type="text" class="form-input" id="modalValueDesc" placeholder='如 {"1":"故障","0":"正常"}' value="${isEdit && item.valueDesc ? Utils.attr(item.valueDesc) : ''}">
               <span style="font-size:var(--font-size-xs);color:var(--color-text-3)">仅布尔型(INT)有效，key 为取值，value 为对应描述</span>
             </div>
             <div class="form-group" style="margin-bottom:0">

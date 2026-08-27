@@ -157,7 +157,8 @@
 
     .monitor-card-name {
       font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
+      font-weight: var(--font-weight-semibold);
+      letter-spacing: 0.3px;
       color: var(--color-text-1);
       white-space: nowrap;
       overflow: hidden;
@@ -166,6 +167,7 @@
 
     .monitor-card-device {
       font-size: 10px;
+      font-weight: var(--font-weight-medium);
       color: var(--color-text-3);
       background: var(--color-bg-4);
       padding: 1px var(--space-1);
@@ -176,10 +178,12 @@
 
     .monitor-card-value {
       font-size: 24px;
-      font-weight: var(--font-weight-bold);
+      font-weight: 800;
       color: var(--color-primary);
       line-height: 1.2;
       font-family: var(--font-mono);
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
       transition: color 0.3s ease;
     }
 
@@ -208,7 +212,8 @@
 
     .monitor-lamp .lamp-text {
       font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
+      font-weight: var(--font-weight-bold);
+      letter-spacing: 0.3px;
     }
     .monitor-lamp.red .lamp-text { color: #D7312A; }
     .monitor-lamp.green .lamp-text { color: #2A814B; }
@@ -249,13 +254,13 @@
 
     .monitor-switch .switch-side-label {
       font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
+      font-weight: var(--font-weight-semibold);
       white-space: nowrap;
     }
     .monitor-switch .switch-side-label.left { color: var(--color-text-3); }
     .monitor-switch .switch-side-label.right { color: var(--color-text-3); }
-    .monitor-switch.on .switch-side-label.left { color: #2A814B; }
-    .monitor-switch.off .switch-side-label.right { color: #2A814B; }
+    .monitor-switch.on .switch-side-label.right { color: #2A814B; }
+    .monitor-switch.off .switch-side-label.left { color: #2A814B; }
 
     /* 可写：可点击；只读：蒙层禁止 */
     .monitor-switch.editable .switch-track-sm { cursor: pointer; }
@@ -332,89 +337,6 @@
     .device-accordion.collapsed .chevron { transform: rotate(-90deg); }
     .device-accordion-body { padding: var(--space-2); }
     .device-accordion.collapsed .device-accordion-body { display: none; }
-
-    /* Table section */
-    .stream-table-wrap {
-      background: var(--color-white);
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--color-border-light);
-      overflow: hidden;
-    }
-
-    .stream-table-wrap .card-header {
-      padding: var(--space-4) var(--space-6);
-    }
-
-    .stream-table-container {
-      max-height: 500px;
-      overflow-y: auto;
-    }
-
-    .stream-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: var(--font-size-md);
-    }
-
-    .stream-table thead th {
-      background: var(--color-bg-4);
-      color: var(--color-text-2);
-      font-weight: var(--font-weight-medium);
-      text-align: left;
-      padding: var(--space-3) var(--space-4);
-      border-bottom: 1px solid var(--color-border-light);
-      white-space: nowrap;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-    }
-
-    .stream-table tbody td {
-      padding: var(--space-3) var(--space-4);
-      border-bottom: 1px solid var(--color-border-light);
-      color: var(--color-text-1);
-    }
-
-    .stream-table tbody tr:hover { background: var(--color-bg-3); }
-    .stream-table tbody tr:last-child td { border-bottom: none; }
-
-    .stream-table .col-value {
-      font-family: var(--font-mono);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-primary);
-    }
-
-    .stream-table .col-time {
-      font-family: var(--font-mono);
-      font-size: var(--font-size-sm);
-      color: var(--color-text-3);
-    }
-
-    .stream-table .col-id {
-      font-family: var(--font-mono);
-      font-size: var(--font-size-sm);
-      color: var(--color-text-3);
-    }
-
-    /* New row fade-in animation */
-    @keyframes row-fade-in {
-      0% {
-        opacity: 0;
-        background: var(--primary-1);
-      }
-      100% {
-        opacity: 1;
-        background: transparent;
-      }
-    }
-
-    .stream-table tbody tr.row-new {
-      animation: row-fade-in 1.5s ease;
-    }
-
-    .stream-table tbody tr.row-new td {
-      background: transparent;
-    }
 
     /* Value update flash */
     @keyframes value-flash {

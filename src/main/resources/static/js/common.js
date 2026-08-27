@@ -144,6 +144,16 @@ const Utils = {
     return div.innerHTML;
   },
 
+  // 用于 HTML 属性值（value="..."）场景，额外转义双引号，避免属性被截断
+  attr(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  },
+
   debounce(fn, delay = 300) {
     let timer;
     return function(...args) {

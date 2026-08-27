@@ -1,8 +1,7 @@
 /**
  * 实时监控页面逻辑
  * - 自动刷新开关 + 间隔选择器
- * - 最新监控值卡片网格
- * - 实时数据流表格（带新行动画）
+ * - 最新监控值卡片网格（手风琴分组 + 指示灯/开关图案）
  */
 (function () {
   'use strict';
@@ -13,13 +12,10 @@
     interval: 10,          // seconds
     timerId: null,
     lastUpdateTime: null,
-    previousIds: new Set(), // track previous history IDs for highlight
     previousValues: {},     // track previous monitor latest values for flash
     collapsedMap: {},       // deviceName -> whether its accordion is collapsed
   };
 
-  const STREAM_SIZE = 50;
-  let monitorConfigMap = {}; // monitorId -> {valueType, valueDesc}
   let monitorsCache = [];    // 最近一次 overview 监控点数据，用于开关切换后局部更新
 
   // ── Init ──
@@ -30,12 +26,7 @@
     renderPageStructure();
     loadAllData();
     startAutoRefresh();
-    // 预加载监控点配置，用于实时数据流按值显示描述
-    MonitorOptions.loadMonitors().then(list => {
-      monitorConfigMap = {};
-      (list || []).forEach(m => { monitorConfigMap[m.monitorId] = m; });
-    });
-    // 开关点击：可写(权限非 r)的开关可直接切换，写历史记录同步数据库
+    // 开关点击：可写(权限非 r)的开关可直接切换，通过 /api/monitor-operation 提交新值
     document.addEventListener('click', function (e) {
       const sw = e.target.closest('.monitor-switch.editable');
       if (!sw) return;
@@ -84,31 +75,6 @@
       <div class="monitor-grid" id="monitorGrid">
         ${renderSkeletonCards(4)}
       </div>
-
-      <!-- Real-time Data Stream Table -->
-      <div class="stream-table-wrap">
-        <div class="card-header">
-          <span class="card-title">实时数据流</span>
-          <span class="text-muted" style="font-size:var(--font-size-sm)">最近 ${STREAM_SIZE} 条记录</span>
-        </div>
-        <div class="stream-table-container">
-          <table class="stream-table">
-            <thead>
-              <tr>
-                <th>监控点ID</th>
-                <th>监控点名称</th>
-                <th>监控值</th>
-                <th>时间</th>
-              </tr>
-            </thead>
-            <tbody id="streamTableBody">
-              <tr><td colspan="4" style="text-align:center;padding:var(--space-8);color:var(--color-text-3)">
-                <span class="loading-spinner"></span> 加载中...
-              </td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
     `;
 
     // Event listeners
@@ -119,10 +85,7 @@
 
   // ── Data Loading ──
   async function loadAllData() {
-    await Promise.all([
-      loadOverview(),
-      loadRealtimeStream(),
-    ]);
+    await loadOverview();
     updateLastUpdateTime();
   }
 
@@ -134,17 +97,6 @@
       Toast.error('加载监控数据失败: ' + err.message);
       document.getElementById('monitorGrid').innerHTML =
         '<div style="grid-column:1/-1;text-align:center;padding:var(--space-10);color:var(--color-danger)">数据加载失败</div>';
-    }
-  }
-
-  async function loadRealtimeStream() {
-    try {
-      const list = await API.dashboard.realtime(STREAM_SIZE);
-      renderStreamTable(list || []);
-    } catch (err) {
-      Toast.error('加载实时数据流失败: ' + err.message);
-      document.getElementById('streamTableBody').innerHTML =
-        '<tr><td colspan="4" style="text-align:center;padding:var(--space-8);color:var(--color-danger)">数据加载失败</td></tr>';
     }
   }
 
@@ -212,20 +164,20 @@
           // 权限 r-只读(蒙层禁止更改)；其他(rw/w)可点击切换
           const editable = m.permission !== 'r';
           // 左右两侧固定显示 value_desc 的描述（与 monitor_value 无关）：
-          // 左标签固定显示 1 对应的描述，右标签固定显示 0 对应的描述
+          // 左标签固定显示 0 对应的描述（开关关闭时在左侧），右标签固定显示 1 对应的描述（开关打开时在右侧）
           let leftLabel = '';
           let rightLabel = '';
           if (m.valueType === 'INT' && m.valueDesc) {
             try {
               const descMap = typeof m.valueDesc === 'string' ? JSON.parse(m.valueDesc) : m.valueDesc;
-              const d1 = descMap && descMap['1'];
               const d0 = descMap && descMap['0'];
-              leftLabel = (d1 !== undefined && d1 !== null) ? d1 : '';
-              rightLabel = (d0 !== undefined && d0 !== null) ? d0 : '';
+              const d1 = descMap && descMap['1'];
+              leftLabel = (d0 !== undefined && d0 !== null) ? d0 : '';
+              rightLabel = (d1 !== undefined && d1 !== null) ? d1 : '';
             } catch (e) { /* 忽略解析失败 */ }
           }
-          if (!leftLabel) leftLabel = '1';
-          if (!rightLabel) rightLabel = '0';
+          if (!leftLabel) leftLabel = '0';
+          if (!rightLabel) rightLabel = '1';
           const mask = editable ? '' :
             `<span class="switch-mask" title="只读，不可更改"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>`;
           valueHtml = `<span class="monitor-switch ${isOn ? 'on' : 'off'} ${editable ? 'editable' : 'readonly'}" data-value="${raw}" title="${editable ? '点击切换' : '只读，不可更改'}">` +
@@ -298,7 +250,9 @@
     const m = monitorsCache.find(x => x.monitorId === monitorId);
     if (m) m.latestValue = next;
     try {
-      await API.monitorHistory.save({ monitorId, monitorName, monitorValue: next });
+      // 通过操作接口提交新值，后端在 /api/monitor-operation 中同步更新监控值缓存
+      var user = Auth.getUser() || {};
+      await API.monitorOperation.save({ monitorId, monitorName, preValue: prev, value: next, status: 1, operator: user.username || '' });
       Toast.success(`${monitorName} 已切换为 ${next}`);
     } catch (err) {
       // 失败回滚
@@ -315,40 +269,6 @@
     sw.setAttribute('data-value', value);
     sw.classList.toggle('on', value === '1');
     sw.classList.toggle('off', value !== '1');
-  }
-
-  // ── Render: Stream Table ──
-  function renderStreamTable(records) {
-    const tbody = document.getElementById('streamTableBody');
-    if (!records || records.length === 0) {
-      tbody.innerHTML = `
-        <tr><td colspan="4" style="text-align:center;padding:var(--space-8);color:var(--color-text-3)">
-          暂无实时数据
-        </td></tr>
-      `;
-      return;
-    }
-
-    // Determine new rows (IDs not seen in previous render)
-    const currentIds = new Set(records.map(r => r.id));
-    const newIds = new Set();
-    for (const id of currentIds) {
-      if (!state.previousIds.has(id)) newIds.add(id);
-    }
-    state.previousIds = currentIds;
-
-    tbody.innerHTML = records.map(r => {
-      const isNew = newIds.has(r.id);
-      const cfg = monitorConfigMap[r.monitorId];
-      return `
-        <tr class="${isNew ? 'row-new' : ''}">
-          <td class="col-id">${Utils.escape(r.monitorId)}</td>
-          <td>${Utils.escape(r.monitorName)}</td>
-          <td class="col-value">${Utils.renderMonitorValue(r.monitorValue, cfg && cfg.valueType, cfg && cfg.valueDesc)}</td>
-          <td class="col-time">${Utils.formatDateTime(r.createTime)}</td>
-        </tr>
-      `;
-    }).join('');
   }
 
   // ── Auto Refresh ──

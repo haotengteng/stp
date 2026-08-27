@@ -102,7 +102,6 @@ const API = {
     page: (pageNum, pageSize) => API.get('/api/monitor-operation/page', { pageNum, pageSize }),
     get: (id) => API.get(`/api/monitor-operation/${id}`),
     save: (data) => API.post('/api/monitor-operation', data),
-    delete: (id) => API.delete(`/api/monitor-operation/${id}`),
   },
 
   // ── Alarm Record API ──

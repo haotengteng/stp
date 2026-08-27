@@ -23,13 +23,28 @@
     statusFilter: '',    // '' = all, '1' = success, '0' = fail
   };
 
+  var monitorValueMap = {}; // monitorId -> {valueType, valueDesc}
+
   // ── Init ───────────────────────────────────────────────────────
-  function init() {
+  async function init() {
     Layout.init('operation', '操作记录');
     renderSkeleton();
     bindEvents();
     loadMonitorOptions();
+    await loadValueDescMap(); // 先加载值描述映射，再加载数据渲染表格
     loadData();
+  }
+
+  async function loadValueDescMap() {
+    try {
+      var list = await MonitorOptions.loadMonitors();
+      monitorValueMap = {};
+      (list || []).forEach(function (m) {
+        monitorValueMap[m.monitorId] = { valueType: m.valueType, valueDesc: m.valueDesc };
+      });
+    } catch (e) {
+      monitorValueMap = {};
+    }
   }
 
   function renderSkeleton() {
@@ -99,7 +114,6 @@
       loadData();
     });
 
-    document.getElementById('tableContainer').addEventListener('click', onTableClick);
     document.getElementById('paginationContainer').addEventListener('click', onPaginationClick);
   }
 
@@ -165,22 +179,21 @@
         '<thead><tr>' +
           '<th>ID</th><th>监控点ID</th><th>监控点名称</th>' +
           '<th>操作前值</th><th>操作后值</th><th>状态</th>' +
-          '<th>操作流水号</th><th>创建时间</th><th>操作</th>' +
+          '<th>操作人</th><th>操作流水号</th><th>创建时间</th>' +
         '</tr></thead>' +
         '<tbody>' +
           list.map(function (o) {
+            var cfg = monitorValueMap[o.monitorId] || {};
             return '<tr>' +
               '<td>' + Utils.escape(o.id) + '</td>' +
               '<td>' + Utils.escape(o.monitorId) + '</td>' +
               '<td>' + Utils.escape(o.monitorName) + '</td>' +
-              '<td>' + Utils.escape(o.preValue) + '</td>' +
-              '<td>' + Utils.escape(o.value) + '</td>' +
+              '<td>' + Utils.renderMonitorValue(o.preValue, cfg.valueType, cfg.valueDesc) + '</td>' +
+              '<td>' + Utils.renderMonitorValue(o.value, cfg.valueType, cfg.valueDesc) + '</td>' +
               '<td>' + Utils.statusTag(o.status, 'operation') + '</td>' +
+              '<td>' + Utils.escape(o.operator) + '</td>' +
               '<td>' + Utils.escape(o.operationId) + '</td>' +
               '<td>' + Utils.formatDateTime(o.createTime) + '</td>' +
-              '<td style="white-space:nowrap">' +
-                '<button class="btn btn-ghost btn-sm" data-action="delete" data-id="' + Utils.escape(o.id) + '" style="color:var(--color-danger)">删除</button>' +
-              '</td>' +
             '</tr>';
           }).join('') +
         '</tbody>' +
@@ -198,19 +211,6 @@
         '</svg>' +
         '<div class="empty-text">' + text + '</div>' +
       '</div>';
-  }
-
-  function onTableClick(e) {
-    var btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    var id = btn.dataset.id;
-    var action = btn.dataset.action;
-    var record = null;
-    for (var i = 0; i < state.list.length; i++) {
-      if (String(state.list[i].id) === String(id)) { record = state.list[i]; break; }
-    }
-    if (!record) return;
-    if (action === 'delete') handleDelete(record);
   }
 
   // ── Render Pagination ─────────────────────────────────────────
@@ -265,26 +265,6 @@
     else if (page === 'next') state.pageNum++;
     else state.pageNum = parseInt(page, 10);
     loadData();
-  }
-
-  // ── Delete ────────────────────────────────────────────────────
-  async function handleDelete(record) {
-    var ok = await confirmDialog(
-      '确定要删除操作记录「' + Utils.escape(record.monitorName) + '」吗？此操作不可恢复。',
-      '删除操作记录'
-    );
-    if (!ok) return;
-
-    try {
-      await API.monitorOperation.delete(record.id);
-      Toast.success('删除成功');
-      if (state.list.length === 1 && state.pageNum > 1) {
-        state.pageNum--;
-      }
-      loadData();
-    } catch (err) {
-      Toast.error(err.message || '删除失败');
-    }
   }
 
   // ── Boot ──────────────────────────────────────────────────────

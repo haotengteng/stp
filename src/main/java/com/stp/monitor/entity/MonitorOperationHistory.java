@@ -30,6 +30,9 @@ public class MonitorOperationHistory {
     @Column(name = "status")
     private String status;
 
+    @Column(name = "operator")
+    private String operator;
+
     @Column(name = "operation_id")
     private String operationId;
 

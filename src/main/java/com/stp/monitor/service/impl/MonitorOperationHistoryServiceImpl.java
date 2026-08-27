@@ -36,11 +36,6 @@ public class MonitorOperationHistoryServiceImpl implements MonitorOperationHisto
     }
 
     @Override
-    public void deleteById(Long id) {
-        monitorOperationHistoryRepository.deleteById(id);
-    }
-
-    @Override
     public List<MonitorOperationHistory> findByOperationId(String operationId) {
         return monitorOperationHistoryRepository.findByOperationId(operationId);
     }

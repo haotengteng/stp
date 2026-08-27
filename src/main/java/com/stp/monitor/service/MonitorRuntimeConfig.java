@@ -2,6 +2,8 @@ package com.stp.monitor.service;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class MonitorRuntimeConfig {
 
@@ -28,4 +30,7 @@ public class MonitorRuntimeConfig {
     private String showType;
 
     private String monitorValue;
+
+    /** 最近一次值更新时间（MQTT 上送或操作切换时更新） */
+    private LocalDateTime updateTime;
 }

@@ -5,6 +5,7 @@ import com.stp.monitor.dto.MonitorHistoryRequest;
 import com.stp.monitor.entity.MonitorHistoryInfo;
 import com.stp.monitor.service.MonitorHistoryInfoService;
 import com.stp.monitor.vo.ChartDataVo;
+import com.stp.monitor.util.NumberUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -39,12 +40,26 @@ public class MonitorHistoryInfoController {
             page = monitorHistoryInfoService.findAll(
                     PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "createTime")));
         }
-        return Result.success(page);
+        // 返回前对 monitor_value 四舍五入保留两位小数
+        Page<MonitorHistoryInfo> rounded = page.map(item -> {
+            MonitorHistoryInfo copy = new MonitorHistoryInfo();
+            BeanUtils.copyProperties(item, copy);
+            copy.setMonitorValue(NumberUtil.round(item.getMonitorValue(), 2));
+            return copy;
+        });
+        return Result.success(rounded);
     }
 
     @GetMapping("/latest")
     public Result<List<MonitorHistoryInfo>> latest(@RequestParam String monitorId) {
-        return Result.success(monitorHistoryInfoService.findLatestByMonitorId(monitorId));
+        List<MonitorHistoryInfo> list = monitorHistoryInfoService.findLatestByMonitorId(monitorId);
+        List<MonitorHistoryInfo> rounded = list.stream().map(item -> {
+            MonitorHistoryInfo copy = new MonitorHistoryInfo();
+            BeanUtils.copyProperties(item, copy);
+            copy.setMonitorValue(NumberUtil.round(item.getMonitorValue(), 2));
+            return copy;
+        }).collect(Collectors.toList());
+        return Result.success(rounded);
     }
 
     @GetMapping("/chart")
@@ -54,7 +69,7 @@ public class MonitorHistoryInfoController {
         List<MonitorHistoryInfo> list = monitorHistoryInfoService.findChartData(monitorId, startTime);
         List<ChartDataVo> result = list.stream().map(item -> {
             ChartDataVo vo = new ChartDataVo();
-            vo.setMonitorValue(item.getMonitorValue());
+            vo.setMonitorValue(NumberUtil.round(item.getMonitorValue(), 2));
             vo.setCreateTime(item.getCreateTime());
             return vo;
         }).collect(Collectors.toList());

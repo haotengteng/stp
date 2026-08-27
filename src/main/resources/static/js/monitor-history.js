@@ -1,7 +1,8 @@
 /**
  * 监控历史数据 - Monitor History Page
  * - 趋势图表：监控点ID + 时间范围（预设/自定义）
- * - 历史数据表格：监控点ID + 时间范围筛选 + 分页
+ *   - value_type = FLOAT：折线趋势图
+ *   - value_type = INT（0/1）：甘特图风格的状态时间线
  */
 document.addEventListener('DOMContentLoaded', () => {
   if (!Auth.requireAuth()) return;
@@ -19,16 +20,7 @@ const MonitorHistoryPage = {
     chartEndTime: '',
     chartInstance: null,
     chartLoading: false,
-    // Table state
-    pageNum: 1,
-    pageSize: 10,
-    searchMonitorId: '',
-    tableStartTime: '',           // ISO string
-    tableEndTime: '',             // ISO string
-    list: [],
-    total: 0,
-    totalPages: 0,
-    loading: false,
+    chartEndBoundary: Date.now(), // 图表查询的结束边界，用于 INT 状态条延伸
   },
 
   monitorConfigMap: {}, // monitorId -> {valueType, valueDesc}
@@ -45,27 +37,20 @@ const MonitorHistoryPage = {
     this.renderShell();
     this.bindEvents();
     this.loadMonitorOptions();
-    this.loadTable();
     this.initChart();
-    // 预加载监控点配置，用于历史表格按值显示描述
+    // 预加载监控点配置，用于图表按 valueType/valueDesc 渲染
     MonitorOptions.loadMonitors().then(list => {
       this.monitorConfigMap = {};
       (list || []).forEach(m => { this.monitorConfigMap[m.monitorId] = m; });
     });
   },
 
-  // 加载设备+监控点级联下拉（图表和表格各一组）
+  // 加载设备+监控点级联下拉
   async loadMonitorOptions() {
-    await Promise.all([
-      MonitorOptions.setupCascade('chartDeviceId', 'chartMonitorId', {
-        allDeviceLabel: '全部设备',
-        monitorValueField: 'monitorId',
-      }),
-      MonitorOptions.setupCascade('tableDeviceId', 'tableSearchMonitorId', {
-        allDeviceLabel: '全部设备',
-        monitorValueField: 'monitorId',
-      }),
-    ]);
+    await MonitorOptions.setupCascade('chartDeviceId', 'chartMonitorId', {
+      allDeviceLabel: '全部设备',
+      monitorValueField: 'monitorId',
+    });
   },
 
   renderShell() {
@@ -102,35 +87,11 @@ const MonitorHistoryPage = {
                   <path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/>
                 </svg>
               </div>
-              <div class="empty-text">输入监控点ID并查询以查看趋势图</div>
+              <div class="empty-text">选择监控点并查询以查看趋势图</div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- Data Table Section -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">历史数据</span>
-        </div>
-        <div class="card-body">
-          <div class="search-bar">
-            <select class="form-select" id="tableDeviceId" style="width:120px;flex-shrink:0"><option value="">全部设备</option></select>
-            <select class="form-select" id="tableSearchMonitorId" style="width:130px;flex-shrink:0" disabled><option value="">选择设备</option></select>
-            <input type="datetime-local" class="form-input" id="tableStartDate" value="${this.state.tableStartTime}" style="width:160px;flex-shrink:0" title="开始时间">
-            <span class="date-separator" style="flex-shrink:0">至</span>
-            <input type="datetime-local" class="form-input" id="tableEndDate" value="${this.state.tableEndTime}" style="width:160px;flex-shrink:0" title="结束时间">
-            <button class="btn btn-primary btn-sm" id="btnTableSearch" style="flex-shrink:0">搜索</button>
-            <button class="btn btn-secondary btn-sm" id="btnTableReset" style="flex-shrink:0">重置</button>
-          </div>
-          <div style="overflow-x:auto">
-            <div id="tableContainer">
-              <div class="table-loading"><span class="loading-spinner"></span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div id="paginationBar"></div>
     `;
   },
 
@@ -151,27 +112,6 @@ const MonitorHistoryPage = {
       if (document.getElementById('chartMonitorId').value) {
         document.getElementById('btnQueryChart').click();
       }
-    });
-
-    // ── Table search ──
-    document.getElementById('btnTableSearch').addEventListener('click', () => {
-      this.state.searchMonitorId = document.getElementById('tableSearchMonitorId').value;
-      this.state.tableStartTime = document.getElementById('tableStartDate').value;
-      this.state.tableEndTime = document.getElementById('tableEndDate').value;
-      this.state.pageNum = 1;
-      this.loadTable();
-    });
-
-    document.getElementById('btnTableReset').addEventListener('click', () => {
-      this.state.searchMonitorId = '';
-      this.state.tableStartTime = '';
-      this.state.tableEndTime = '';
-      this.state.pageNum = 1;
-      document.getElementById('tableDeviceId').value = '';
-      document.getElementById('tableDeviceId').dispatchEvent(new Event('change'));
-      document.getElementById('tableStartDate').value = '';
-      document.getElementById('tableEndDate').value = '';
-      this.loadTable();
     });
 
     // ── Window resize ──
@@ -240,8 +180,10 @@ const MonitorHistoryPage = {
 
     try {
       let data;
+      let boundary;
       if (mode === 'preset') {
         data = await API.monitorHistory.chart(monitorId, hours);
+        boundary = Date.now();
       } else {
         // 自定义时间范围：调用 chart 接口拿全部数据后前端按时间范围过滤
         // 计算小时差传给后端，取超出范围的数据再前端截取
@@ -256,8 +198,13 @@ const MonitorHistoryPage = {
           const ts = this.parseTimeToTimestamp(item.createTime);
           return ts >= startTs && ts <= endTs;
         });
+        boundary = endTs;
       }
-      this.renderChart(data || []);
+      this.state.chartEndBoundary = boundary;
+      // 根据监控点 value_type 决定图表展示方式
+      const cfg = this.monitorConfigMap[monitorId] || {};
+      const valueType = cfg.valueType || 'FLOAT';
+      this.renderChart(data || [], valueType);
     } catch (err) {
       this.state.chartInstance.hideLoading();
       Toast.error(err.message || '图表数据加载失败');
@@ -278,7 +225,7 @@ const MonitorHistoryPage = {
     }
   },
 
-  renderChart(data) {
+  renderChart(data, valueType) {
     const container = document.getElementById('chartContainer');
 
     if (!this.state.chartInstance) {
@@ -293,14 +240,26 @@ const MonitorHistoryPage = {
       return [ts, isNaN(val) ? null : val];
     }).sort((a, b) => a[0] - b[0]);
 
-    const values = chartData.map(d => d[1]).filter(v => v !== null);
+    const hasData = chartData.some(d => d[1] !== null);
 
-    if (chartData.length === 0 || values.length === 0) {
+    if (chartData.length === 0 || !hasData) {
       this.state.chartInstance.hideLoading();
       this.state.chartInstance.setOption(this.getChartOption([]), true);
       document.getElementById('chartSummary').style.display = 'none';
       return;
     }
+
+    // INT 类型（0/1）走甘特图风格的状态时间线
+    if (valueType === 'INT') {
+      this.renderIntChart(chartData);
+    } else {
+      this.renderFloatChart(chartData);
+    }
+  },
+
+  // FLOAT：折线趋势图 + 统计摘要
+  renderFloatChart(chartData) {
+    const values = chartData.map(d => d[1]).filter(v => v !== null);
 
     const max = Math.max(...values);
     const min = Math.min(...values);
@@ -333,6 +292,173 @@ const MonitorHistoryPage = {
 
     this.state.chartInstance.hideLoading();
     this.state.chartInstance.setOption(this.getChartOption(chartData), true);
+  },
+
+  // INT（0/1）：甘特图风格的状态时间线 + 状态统计摘要
+  renderIntChart(chartData) {
+    const points = chartData.filter(d => d[1] !== null);
+    const cfg = this.monitorConfigMap[this.state.chartMonitorId] || {};
+    const valueDesc = cfg.valueDesc;
+    let descMap = null;
+    if (valueDesc) {
+      try { descMap = typeof valueDesc === 'string' ? JSON.parse(valueDesc) : valueDesc; } catch (e) { /* 解析失败则显示原始值 */ }
+    }
+    // 状态显示标签：优先 value_desc，其次原始值
+    const stateLabel = (v) => {
+      const key = String(v).trim();
+      if (descMap && Object.prototype.hasOwnProperty.call(descMap, key)) return String(descMap[key]);
+      return key;
+    };
+
+    const values = points.map(d => d[1]);
+    const latest = values[values.length - 1];
+    // 汇总统计
+    const segments = this.buildSegments(points, this.state.chartEndBoundary);
+    const totalDur = segments.reduce((a, s) => a + (s.end - s.start), 0) || 1;
+    const durOf = (v) => segments.filter(s => s.value === v).reduce((a, s) => a + (s.end - s.start), 0);
+    const pctOf = (v) => ((durOf(v) / totalDur) * 100).toFixed(1);
+    const switches = Math.max(0, segments.length - 1);
+
+    const summaryEl = document.getElementById('chartSummary');
+    summaryEl.style.display = 'flex';
+    summaryEl.innerHTML = `
+      <div class="chart-summary-item">
+        <span class="summary-label">最新状态</span>
+        <span class="summary-value" style="color:${latest === 1 ? '#F5222D' : '#52C41A'}">${stateLabel(latest)}</span>
+      </div>
+      <div class="chart-summary-item">
+        <span class="summary-label">${stateLabel(1)}占比</span>
+        <span class="summary-value">${pctOf(1)}%</span>
+      </div>
+      <div class="chart-summary-item">
+        <span class="summary-label">${stateLabel(0)}占比</span>
+        <span class="summary-value">${pctOf(0)}%</span>
+      </div>
+      <div class="chart-summary-item">
+        <span class="summary-label">状态切换</span>
+        <span class="summary-value">${switches} 次</span>
+      </div>
+      <div class="chart-summary-item">
+        <span class="summary-label">数据点数</span>
+        <span class="summary-value">${values.length}</span>
+      </div>
+    `;
+
+    this.state.chartInstance.hideLoading();
+    this.state.chartInstance.setOption(this.getIntChartOption(segments, stateLabel), true);
+  },
+
+  // 将点序列转换为持续区间，并合并连续相同状态
+  buildSegments(chartData, endBoundary) {
+    const segments = [];
+    for (let i = 0; i < chartData.length; i++) {
+      const start = chartData[i][0];
+      const end = i < chartData.length - 1 ? chartData[i + 1][0] : (endBoundary || start);
+      segments.push({ start, end: Math.max(end, start + 1), value: chartData[i][1] });
+    }
+    const merged = [];
+    for (const seg of segments) {
+      const last = merged[merged.length - 1];
+      if (last && last.value === seg.value) {
+        last.end = seg.end;
+      } else {
+        merged.push({ ...seg });
+      }
+    }
+    return merged;
+  },
+
+  // INT：甘特图风格的状态时间线配置
+  getIntChartOption(segments, stateLabel) {
+    // 状态泳道：0 在上，1 在下
+    const present = [...new Set(segments.map(s => s.value))].sort((a, b) => a - b);
+    const laneKeys = present.length >= 2 ? [0, 1] : present;
+    const laneColor = (v) => v === 1 ? '#F5222D' : '#52C41A';
+
+    const data = segments.map(seg => ({
+      value: [seg.start, laneKeys.indexOf(seg.value), seg.end, seg.value],
+      itemStyle: { color: laneColor(seg.value) },
+    }));
+
+    return {
+      tooltip: {
+        trigger: 'item',
+        backgroundColor: 'rgba(255, 255, 255, 0.98)',
+        borderColor: '#DDE2E9', borderWidth: 1,
+        textStyle: { color: '#0C0D0E', fontSize: 12 },
+        formatter: (params) => {
+          const v = params.data && params.data.value;
+          if (!v) return '';
+          const [startTs, , endTs, value] = v;
+          const color = laneColor(value);
+          return `<div style="font-size:12px;line-height:1.6">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${color}"></span>
+              状态: <strong>${stateLabel(value)}</strong>
+            </div>
+            <div style="color:#737A87">${this.formatDateTime(new Date(startTs))} → ${this.formatDateTime(new Date(endTs))}</div>
+            <div style="color:#737A87">持续: <strong>${this.formatDuration(endTs - startTs)}</strong></div>
+          </div>`;
+        },
+      },
+      grid: { left: 60, right: 24, top: 24, bottom: 48, containLabel: true },
+      xAxis: {
+        type: 'time',
+        axisLine: { lineStyle: { color: '#DDE2E9' } },
+        axisTick: { show: false },
+        axisLabel: {
+          color: '#737A87', fontSize: 11,
+          // 根据时间跨度自动选择合适的格式
+          formatter: (val) => this.formatTimeLabel(val),
+        },
+        splitLine: { show: false },
+      },
+      yAxis: {
+        type: 'category',
+        data: laneKeys.map(k => stateLabel(k)),
+        axisLine: { show: false }, axisTick: { show: false },
+        axisLabel: { color: '#737A87', fontSize: 12 },
+        splitLine: { show: false },
+      },
+      series: [{
+        name: '状态',
+        type: 'custom',
+        encode: { x: [0, 2], y: 1 },
+        data,
+        renderItem: (params, api) => {
+          const start = api.coord([api.value(0), api.value(1)]);
+          const end = api.coord([api.value(2), api.value(1)]);
+          const bandHeight = api.size([0, 1])[1] || 0;
+          const barHeight = Math.max(10, bandHeight * 0.6);
+          const rect = {
+            x: start[0],
+            y: start[1] - barHeight / 2,
+            width: Math.max(1, end[0] - start[0]),
+            height: barHeight,
+          };
+          const clipped = echarts.graphic.clipRectByRect(rect, {
+            x: params.coordSys.x,
+            y: params.coordSys.y,
+            width: params.coordSys.width,
+            height: params.coordSys.height,
+          });
+          return clipped && {
+            type: 'rect',
+            shape: clipped,
+            style: api.style(),
+          };
+        },
+      }],
+    };
+  },
+
+  formatDuration(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    if (s < 60) return `${s} 秒`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m} 分 ${s % 60} 秒`;
+    const h = Math.floor(m / 60);
+    return `${h} 时 ${m % 60} 分`;
   },
 
   getChartOption(chartData) {
@@ -429,159 +555,5 @@ const MonitorHistoryPage = {
     }
     if (typeof dt === 'string') return new Date(dt.replace(' ', 'T')).getTime();
     return Date.now();
-  },
-
-  // ── Table ──
-  buildFilters() {
-    const filters = {};
-    if (this.state.searchMonitorId) filters.monitorId = this.state.searchMonitorId;
-    if (this.state.tableStartTime) filters.startTime = this.state.tableStartTime;
-    if (this.state.tableEndTime) filters.endTime = this.state.tableEndTime;
-    return Object.keys(filters).length > 0 ? filters : null;
-  },
-
-  async loadTable() {
-    this.state.loading = true;
-    this.renderTableLoading();
-    try {
-      const filters = this.buildFilters();
-      const res = await API.monitorHistory.page(this.state.pageNum, this.state.pageSize, filters);
-      this.state.list = res.content || [];
-      this.state.total = res.totalElements || 0;
-      this.state.totalPages = res.totalPages || 0;
-    } catch (err) {
-      Toast.error(err.message || '加载数据失败');
-      this.state.list = [];
-      this.state.total = 0;
-      this.state.totalPages = 0;
-    } finally {
-      this.state.loading = false;
-    }
-    this.renderTable();
-  },
-
-  renderTableLoading() {
-    const c = document.getElementById('tableContainer');
-    if (c) c.innerHTML = '<div class="table-loading"><span class="loading-spinner"></span></div>';
-  },
-
-  renderTable() {
-    const container = document.getElementById('tableContainer');
-    if (!container) return;
-    if (this.state.loading) return;
-
-    if (!this.state.list || this.state.list.length === 0) {
-      container.innerHTML = `
-        <div class="empty-state">
-          <div class="empty-icon">
-            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 6-6"/>
-            </svg>
-          </div>
-          <div class="empty-text">暂无历史数据</div>
-        </div>
-      `;
-      this.renderPagination();
-      return;
-    }
-
-    const rows = this.state.list.map(item => {
-      const cfg = this.monitorConfigMap[item.monitorId];
-      return `
-      <tr>
-        <td>${Utils.escape(item.id)}</td>
-        <td style="font-family:var(--font-mono)">${Utils.escape(item.monitorId)}</td>
-        <td>${Utils.escape(item.monitorName)}</td>
-        <td style="font-family:var(--font-mono);font-weight:var(--font-weight-medium)">${Utils.renderMonitorValue(item.monitorValue, cfg && cfg.valueType, cfg && cfg.valueDesc)}</td>
-        <td style="white-space:nowrap">${Utils.formatDateTime(item.createTime)}</td>
-        <td style="white-space:nowrap">
-          <button class="btn btn-ghost btn-sm text-danger" onclick="MonitorHistoryPage.remove(${item.id})">删除</button>
-        </td>
-      </tr>
-    `;
-    }).join('');
-
-    container.innerHTML = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>监控点ID</th>
-            <th>监控点名称</th>
-            <th>监控值</th>
-            <th>创建时间</th>
-            <th style="white-space:nowrap">操作</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `;
-
-    this.renderPagination();
-  },
-
-  renderPagination() {
-    const pagBar = document.getElementById('paginationBar');
-    if (!pagBar) return;
-
-    if (this.state.total === 0) { pagBar.innerHTML = ''; return; }
-
-    const current = this.state.pageNum;
-    const total = this.state.totalPages;
-    const start = (current - 1) * this.state.pageSize + 1;
-    const end = Math.min(current * this.state.pageSize, this.state.total);
-
-    let pages = [];
-    const maxVisible = 7;
-    if (total <= maxVisible) {
-      for (let i = 1; i <= total; i++) pages.push(i);
-    } else {
-      pages.push(1);
-      if (current > 4) pages.push('...');
-      const s = Math.max(2, current - 2);
-      const e = Math.min(total - 1, current + 2);
-      for (let i = s; i <= e; i++) pages.push(i);
-      if (current < total - 3) pages.push('...');
-      pages.push(total);
-    }
-
-    const pageBtns = pages.map(p => {
-      if (p === '...') return '<span class="page-btn" style="border:none;background:none;cursor:default">...</span>';
-      return `<button class="page-btn ${p === current ? 'active' : ''}" onclick="MonitorHistoryPage.goToPage(${p})">${p}</button>`;
-    }).join('');
-
-    pagBar.innerHTML = `
-      <div class="card-body" style="padding:var(--space-4) var(--space-6) var(--space-6)">
-        <div class="pagination">
-          <span class="page-info">共 ${this.state.total} 条，显示 ${start}-${end}</span>
-          <button class="page-btn" ${current <= 1 ? 'disabled' : ''} onclick="MonitorHistoryPage.goToPage(${current - 1})">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-          </button>
-          ${pageBtns}
-          <button class="page-btn" ${current >= total ? 'disabled' : ''} onclick="MonitorHistoryPage.goToPage(${current + 1})">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-          </button>
-        </div>
-      </div>
-    `;
-  },
-
-  goToPage(page) {
-    if (page < 1 || page > this.state.totalPages || page === this.state.pageNum) return;
-    this.state.pageNum = page;
-    this.loadTable();
-  },
-
-  async remove(id) {
-    const ok = await confirmDialog('确定要删除该历史记录吗？删除后不可恢复。', '删除确认');
-    if (!ok) return;
-    try {
-      await API.monitorHistory.delete(id);
-      Toast.success('删除成功');
-      if (this.state.list.length === 1 && this.state.pageNum > 1) this.state.pageNum--;
-      this.loadTable();
-    } catch (err) {
-      Toast.error(err.message || '删除失败');
-    }
   },
 };
