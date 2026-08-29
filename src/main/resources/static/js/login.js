@@ -9,11 +9,21 @@
 (function () {
   'use strict';
 
-  // Redirect to realtime page if already logged in
-  if (Auth.isLoggedIn()) {
-    window.location.href = '/pages/realtime.html';
-    return;
-  }
+  // 已有本地令牌：向后端校验登录态，有效则直接进入系统，无效则清理后展示登录表单
+  (async function checkSession() {
+    if (!localStorage.getItem('stp_token')) return;
+    try {
+      const user = await API.auth.me();
+      if (user) {
+        Auth.setUser(user);
+        window.location.href = '/pages/realtime.html';
+      } else {
+        Auth.clear();
+      }
+    } catch (e) {
+      Auth.clear();
+    }
+  })();
 
   document.addEventListener('DOMContentLoaded', function () {
     // Initialize toast notification system
@@ -90,8 +100,8 @@
 
       try {
         var data = await API.login(username, password);
-        Auth.setUser(data);
-        Auth.setToken(data.userId);
+        Auth.setUser(data.user);
+        Auth.setToken(data.token);
         Toast.success('登录成功，正在跳转...');
         setTimeout(function () {
           window.location.href = '/pages/realtime.html';

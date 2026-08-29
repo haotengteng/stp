@@ -17,6 +17,12 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+  web:
+    resources:
+      cache:
+        # 静态资源强制浏览器每次回源校验，避免旧版 JS/HTML 被缓存导致前端改动不生效
+        cachecontrol:
+          no-cache: true
 
 mqtt:
   enabled: true

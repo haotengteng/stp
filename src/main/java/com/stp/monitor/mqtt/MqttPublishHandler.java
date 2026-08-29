@@ -51,15 +51,6 @@ public class MqttPublishHandler {
      * 向默认下发 topic（/DownloadTopicNB）发送 JSON 消息
      *
      * @param preValue 操作前值，为空时回退取缓存当前值
-     */
-    public void publish(String monitorId, String value, String preValue) {
-        publish(monitorId, value, preValue, null);
-    }
-
-    /**
-     * 向默认下发 topic（/DownloadTopicNB）发送 JSON 消息
-     *
-     * @param preValue 操作前值，为空时回退取缓存当前值
      * @param operator 操作人
      */
     public void publish(String monitorId, String value, String preValue, String operator) {

@@ -58,6 +58,13 @@ a:hover { color: var(--color-primary-hover); }
   white-space: nowrap;
 }
 
+.sidebar-logo .logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
 .sidebar-nav {
   flex: 1;
   padding: var(--space-3) var(--space-2);

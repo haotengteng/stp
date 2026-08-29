@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class AlarmRecordServiceImpl implements AlarmRecordService {
@@ -42,6 +43,11 @@ public class AlarmRecordServiceImpl implements AlarmRecordService {
                 .orElseThrow(() -> new IllegalArgumentException("告警记录不存在"));
         record.setStatus(status);
         return alarmRecordRepository.save(record);
+    }
+
+    @Override
+    public List<AlarmRecord> findByMonitorIdAndStatus(String monitorId, Integer status) {
+        return alarmRecordRepository.findByMonitorIdAndStatus(monitorId, status);
     }
 
     @Override

@@ -2,11 +2,10 @@
  * Common Utilities - 认证、布局注入、工具函数
  */
 
-// ── 认证管理 ──
+// ── 认证管理（服务端校验登录态） ──
 const Auth = {
   isLoggedIn() {
-    const user = localStorage.getItem('stp_user');
-    return !!user;
+    return !!localStorage.getItem('stp_token');
   },
 
   getUser() {
@@ -23,18 +22,43 @@ const Auth = {
     localStorage.setItem('stp_token', token);
   },
 
-  logout() {
+  clear() {
     localStorage.removeItem('stp_user');
     localStorage.removeItem('stp_token');
+  },
+
+  // 清理本地登录态并跳转登录页
+  toLogin() {
+    this.clear();
     window.location.href = '/login.html';
   },
 
-  requireAuth() {
-    if (!this.isLoggedIn()) {
-      window.location.href = '/login.html';
+  logout() {
+    // 通知服务端使当前令牌失效（尽力而为，不阻塞跳转）
+    try { API.auth.logout(); } catch (e) { /* 忽略 */ }
+    this.toLogin();
+  },
+
+  // 服务端校验登录态：令牌有效则返回 true，否则清理并跳转登录页
+  async requireAuth() {
+    if (!localStorage.getItem('stp_token')) {
+      this.toLogin();
       return false;
     }
-    return true;
+    try {
+      const user = await API.auth.me();
+      if (user) {
+        this.setUser(user);
+        return true;
+      }
+    } catch (e) { /* 校验失败按未登录处理 */ }
+    this.toLogin();
+    return false;
+  },
+
+  // 接口返回 401 时的统一处理
+  handleUnauthorized() {
+    this.toLogin();
   }
 };
 
@@ -346,7 +370,11 @@ const Layout = {
   ],
 
   init(activeId, pageTitle) {
-    if (!Auth.requireAuth()) return;
+    // 快速路径：页面加载前已由 Auth.requireAuth() 完成服务端校验，这里仅兜底
+    if (!localStorage.getItem('stp_token')) {
+      window.location.href = '/login.html';
+      return;
+    }
 
     const user = Auth.getUser();
     const initials = Utils.getInitials(user?.username);
@@ -366,8 +394,8 @@ const Layout = {
       <div class="app-shell">
         <aside class="sidebar">
           <div class="sidebar-logo">
-            <div class="logo-icon">S</div>
-            <span class="logo-text">STP 监控平台</span>
+            <img class="logo-img" src="/assets/logo.png" alt="粪水净化监控平台" onerror="this.style.display='none'">
+            <span class="logo-text">粪水净化监控平台</span>
           </div>
           <nav class="sidebar-nav">${navHtml}</nav>
           <div class="sidebar-footer">

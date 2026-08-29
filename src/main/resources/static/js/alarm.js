@@ -21,9 +21,9 @@
   };
 
   // ── 初始化 ──
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
+    if (!(await Auth.requireAuth())) return;
     Layout.init('alarm', '告警管理');
-    if (!Auth.isLoggedIn()) return;
     Toast.init();
     renderShell();
     loadMonitorOptions();

@@ -19,9 +19,9 @@
   let monitorsCache = [];    // 最近一次 overview 监控点数据，用于开关切换后局部更新
 
   // ── Init ──
-  document.addEventListener('DOMContentLoaded', function () {
+  document.addEventListener('DOMContentLoaded', async function () {
+    if (!(await Auth.requireAuth())) return;
     Layout.init('realtime', '实时监控');
-    if (!Auth.isLoggedIn()) return;
     Toast.init();
     renderPageStructure();
     loadAllData();

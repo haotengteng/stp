@@ -1,8 +1,8 @@
 /**
  * 监控点配置 - Monitor Config Page
  */
-document.addEventListener('DOMContentLoaded', () => {
-  if (!Auth.requireAuth()) return;
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!(await Auth.requireAuth())) return;
   Layout.init('monitor-config', '监控点配置');
   MonitorConfigPage.init();
 });

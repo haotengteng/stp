@@ -34,8 +34,17 @@ public class MonitorConfigCache {
      */
     public synchronized void reload() {
         List<MonitorConfig> list = monitorConfigService.findAll();
+        Map<String, MonitorRuntimeConfig> oldMap = configMap;
         Map<String, MonitorRuntimeConfig> newMap = list.stream()
                 .collect(Collectors.toMap(MonitorConfig::getMonitorId, this::toRuntimeConfig, (a, b) -> b));
+        // 保留已存在的实时值（MQTT 上送的最新值），避免 reload 清空后统计/展示丢失
+        newMap.forEach((id, cfg) -> {
+            MonitorRuntimeConfig old = oldMap.get(id);
+            if (old != null) {
+                cfg.setMonitorValue(old.getMonitorValue());
+                cfg.setUpdateTime(old.getUpdateTime());
+            }
+        });
         configMap = new ConcurrentHashMap<>(newMap);
         log.info("monitor_config 缓存已刷新，共 {} 条", configMap.size());
     }

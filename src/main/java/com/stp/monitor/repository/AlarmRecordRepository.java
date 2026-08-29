@@ -12,6 +12,8 @@ public interface AlarmRecordRepository extends JpaRepository<AlarmRecord, Long> 
 
     List<AlarmRecord> findTop20ByOrderByCreateTimeDesc();
 
+    List<AlarmRecord> findByMonitorIdAndStatus(String monitorId, Integer status);
+
     long countByStatus(Integer status);
 
     long countByCreateTimeBetween(LocalDateTime start, LocalDateTime end);

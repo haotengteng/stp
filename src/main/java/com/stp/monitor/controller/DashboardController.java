@@ -11,6 +11,7 @@ import com.stp.monitor.service.MonitorConfigService;
 import com.stp.monitor.service.MonitorHistoryInfoService;
 import com.stp.monitor.service.MonitorRuntimeConfig;
 import com.stp.monitor.vo.DashboardOverviewVo;
+import com.stp.monitor.vo.DeviceStatusVo;
 import com.stp.monitor.vo.MonitorLatestVo;
 import com.stp.monitor.util.NumberUtil;
 import org.springframework.beans.BeanUtils;
@@ -26,7 +27,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -90,6 +94,68 @@ public class DashboardController {
             latestList.add(latestVo);
         }
         vo.setLatestMonitorValues(latestList);
+        return Result.success(vo);
+    }
+
+    /**
+     * 运行/故障统计：仅统计 monitor_config 中 show_type=LIGHT 的监控点，
+     * 按 MonitorConfigCache 中 monitorValue 判断：1-故障，0-正常运行，无值-未知（不展示）；
+     * 正常运行+故障项按 device_id 分组返回各组数量
+     */
+    @GetMapping("/device-status")
+    public Result<DeviceStatusVo> deviceStatus() {
+        long running = 0;
+        long fault = 0;
+        long unknown = 0;
+        Map<String, Long> groupMap = new LinkedHashMap<>();
+        Map<String, String> groupNameMap = new HashMap<>();
+        for (MonitorRuntimeConfig config : monitorConfigCache.getAll()) {
+            if (config.getShowType() == null || !"LIGHT".equals(config.getShowType())) {
+                continue;
+            }
+            String value = config.getMonitorValue();
+            if (value == null || value.trim().isEmpty()) {
+                unknown++;
+                continue;
+            }
+            double n;
+            try {
+                n = Double.parseDouble(value.trim());
+            } catch (NumberFormatException e) {
+                unknown++;
+                continue;
+            }
+            if (n == 1) {
+                fault++;
+                String deviceId = (config.getDeviceId() == null || config.getDeviceId().trim().isEmpty())
+                        ? "未分组" : config.getDeviceId().trim();
+                groupMap.merge(deviceId, 1L, Long::sum);
+                groupNameMap.putIfAbsent(deviceId, config.getDeviceName());
+            } else if (n == 0) {
+                running++;
+                String deviceId = (config.getDeviceId() == null || config.getDeviceId().trim().isEmpty())
+                        ? "未分组" : config.getDeviceId().trim();
+                groupMap.merge(deviceId, 1L, Long::sum);
+                groupNameMap.putIfAbsent(deviceId, config.getDeviceName());
+            } else {
+                unknown++;
+            }
+        }
+        List<DeviceStatusVo.Group> groups = groupMap.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(e -> {
+                    DeviceStatusVo.Group g = new DeviceStatusVo.Group();
+                    g.setDeviceId(e.getKey());
+                    g.setDeviceName(groupNameMap.getOrDefault(e.getKey(), e.getKey()));
+                    g.setCount(e.getValue());
+                    return g;
+                })
+                .collect(Collectors.toList());
+        DeviceStatusVo vo = new DeviceStatusVo();
+        vo.setRunning(running);
+        vo.setFault(fault);
+        vo.setUnknown(unknown);
+        vo.setGroups(groups);
         return Result.success(vo);
     }
 

@@ -30,6 +30,12 @@ const API = {
       const resp = await fetch(fullUrl, options);
       const data = await resp.json();
       if (data.code === 200) return data.data;
+      // 登录态失效：清理本地登录态并跳转登录页
+      if (data.code === 401) {
+        if (typeof Auth !== 'undefined' && Auth.handleUnauthorized) {
+          Auth.handleUnauthorized();
+        }
+      }
       throw new Error(data.msg || '请求失败');
     } catch (err) {
       if (err.message === 'Failed to fetch' || err.message === 'NetworkError') {
@@ -44,7 +50,7 @@ const API = {
   put(url, body) { return this.request('PUT', url, null, body); },
   delete(url) { return this.request('DELETE', url); },
 
-  // 登录接口使用 @RequestParam
+  // 登录接口使用 @RequestParam，登录成功返回 { user, token }
   async login(username, password) {
     const params = new URLSearchParams({ username, password });
     const resp = await fetch(this.baseUrl + '/api/user/login?' + params.toString(), {
@@ -54,6 +60,12 @@ const API = {
     const data = await resp.json();
     if (data.code === 200) return data.data;
     throw new Error(data.msg || '登录失败');
+  },
+
+  // ── Auth API（登录态校验/退出） ──
+  auth: {
+    me: () => API.get('/api/auth/me'),
+    logout: () => API.post('/api/auth/logout'),
   },
 
   // ── User API ──
@@ -120,6 +132,7 @@ const API = {
   // ── Dashboard API ──
   dashboard: {
     overview: () => API.get('/api/dashboard/overview'),
+    deviceStatus: () => API.get('/api/dashboard/device-status'),
     realtime: (size) => API.get('/api/dashboard/realtime', { size: size || 50 }),
     alarms: (size) => API.get('/api/dashboard/alarms', { size: size || 20 }),
   },

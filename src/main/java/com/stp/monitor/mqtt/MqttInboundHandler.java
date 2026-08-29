@@ -1,5 +1,6 @@
 package com.stp.monitor.mqtt;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +12,9 @@ import org.springframework.util.StringUtils;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.stp.monitor.entity.AlarmRecord;
 import com.stp.monitor.entity.MonitorHistoryInfo;
+import com.stp.monitor.service.AlarmRecordService;
 import com.stp.monitor.service.MonitorConfigCache;
 import com.stp.monitor.service.MonitorHistoryInfoService;
 import com.stp.monitor.service.MonitorRuntimeConfig;
@@ -30,6 +33,9 @@ public class MqttInboundHandler {
 
     @Autowired
     private MonitorHistoryInfoService monitorHistoryInfoService;
+
+    @Autowired
+    private AlarmRecordService alarmRecordService;
 
     /**
      * 处理 /UploadTopicNB 接收到的 JSON 消息
@@ -62,12 +68,16 @@ public class MqttInboundHandler {
                 if (monitorId.equals(monitorValue)) {
                     return;
                 }
-                monitorConfigCache.updateMonitorValue(monitorId, monitorValue);
                 MonitorRuntimeConfig config = monitorConfigCache.getByMonitorId(monitorId);
                 if (config == null) {
                     log.warn("未找到监控点配置，monitorId={}", monitorId);
                     return;
                 }
+                // 记录更新前的值，用于 LIGHT 指示灯 0/1 跳变判断
+                String prevValue = config.getMonitorValue();
+                handleLightTransition(config, prevValue, monitorValue);
+
+                monitorConfigCache.updateMonitorValue(monitorId, monitorValue);
                 config.setMonitorValue(monitorValue);
 
                 MonitorHistoryInfo history = new MonitorHistoryInfo();
@@ -79,6 +89,36 @@ public class MqttInboundHandler {
             });
         } catch (Exception e) {
             log.error("MQTT 消息解析或保存失败，payload={}", payload, e);
+        }
+    }
+
+    /**
+     * LIGHT 指示灯监控点跳变处理：
+     * 0 → 1 时插入一条未处理告警；1 → 0 时将同监控点全部未处理告警置为已处理。
+     */
+    private void handleLightTransition(MonitorRuntimeConfig config, String prevValue, String newValue) {
+        if (!"LIGHT".equals(config.getShowType())) {
+            return;
+        }
+        boolean rising = "0".equals(prevValue) && "1".equals(newValue);
+        boolean falling = "1".equals(prevValue) && "0".equals(newValue);
+        if (rising) {
+            AlarmRecord record = new AlarmRecord();
+            record.setMonitorId(config.getMonitorId());
+            record.setMonitorName(config.getMonitorName());
+            // 0-未处理
+            record.setStatus(0);
+            record.setMessage(config.getMonitorName() + " 触发告警");
+            alarmRecordService.save(record);
+            log.info("LIGHT 监控点触发告警，monitorId={}，value=1", config.getMonitorId());
+        } else if (falling) {
+            List<AlarmRecord> unhandled = alarmRecordService.findByMonitorIdAndStatus(config.getMonitorId(), 0);
+            unhandled.forEach(record -> {
+                // 1-已处理
+                record.setStatus(1);
+                alarmRecordService.save(record);
+            });
+            log.info("LIGHT 监控点恢复，monitorId={}，已自动处理 {} 条告警", config.getMonitorId(), unhandled.size());
         }
     }
 }

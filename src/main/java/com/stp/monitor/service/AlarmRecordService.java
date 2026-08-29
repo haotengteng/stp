@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface AlarmRecordService {
 
@@ -17,6 +18,8 @@ public interface AlarmRecordService {
     void deleteById(Long id);
 
     AlarmRecord process(Long id, Integer status);
+
+    List<AlarmRecord> findByMonitorIdAndStatus(String monitorId, Integer status);
 
     long countByStatus(Integer status);
 

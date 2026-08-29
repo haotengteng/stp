@@ -1,9 +1,11 @@
 package com.stp.monitor.controller;
 
+import com.stp.monitor.auth.AuthTokenManager;
 import com.stp.monitor.common.Result;
 import com.stp.monitor.dto.UserInfoRequest;
 import com.stp.monitor.entity.UserInfo;
 import com.stp.monitor.service.UserInfoService;
+import com.stp.monitor.vo.LoginVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -16,6 +18,9 @@ public class UserInfoController {
 
     @Autowired
     private UserInfoService userInfoService;
+
+    @Autowired
+    private AuthTokenManager authTokenManager;
 
     @GetMapping("/page")
     public Result<Page<UserInfo>> page(@RequestParam(defaultValue = "1") int pageNum,
@@ -55,11 +60,16 @@ public class UserInfoController {
     }
 
     @PostMapping("/login")
-    public Result<UserInfo> login(@RequestParam String username, @RequestParam String password) {
+    public Result<LoginVo> login(@RequestParam String username, @RequestParam String password) {
         UserInfo user = userInfoService.login(username, password);
         if (user == null) {
             return Result.fail("用户名或密码错误");
         }
-        return Result.success(user);
+        // 不向客户端返回密码
+        user.setPassword(null);
+        LoginVo vo = new LoginVo();
+        vo.setUser(user);
+        vo.setToken(authTokenManager.create(user));
+        return Result.success(vo);
     }
 }

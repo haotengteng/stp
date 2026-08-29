@@ -1,197 +1,253 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>数据大屏 - STP 监控平台</title>
-  <link rel="stylesheet" href="/css/design-tokens.css">
-  <link rel="stylesheet" href="/css/common.css">
-  <link rel="stylesheet" href="/css/screen.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>嘉然粪水净化监控平台 - 数据大屏</title>
+  <link rel="stylesheet" href="../css/design-tokens.css?v=20260829" />
+  <link rel="stylesheet" href="../css/common.css?v=20260829" />
+  <link rel="stylesheet" href="../css/screen.css?v=20260829q" />
 </head>
 <body class="screen-body">
-  <!-- Background overlay (scan lines / grid pattern) -->
-  <div class="screen-bg-overlay"></div>
-  <div class="screen-grid-overlay"></div>
-
-  <!-- Full-screen container -->
   <div class="screen-container" id="screenContainer">
-    <!-- Header Bar -->
     <header class="screen-header">
       <div class="header-left">
-        <div class="header-date" id="screenDateTime">---- -- -- --:--:--</div>
+        <div class="logo">
+          <div class="logo-img-wrapper">
+            <img src="../assets/logo.png" alt="粪水净化监控平台" class="logo-img" onerror="this.style.display='none'" />
+          </div>
+          <div class="logo-text">
+            <h1 class="screen-title">粪水净化监控平台</h1>
+          </div>
+        </div>
       </div>
+
       <div class="header-center">
-        <div class="header-title">STP 监控平台 · 数据大屏</div>
-        <div class="header-subtitle">Real-time Monitoring Command Center</div>
+        <div class="system-status running" id="systemStatus">
+          <span class="status-dot active"></span>
+          <span class="status-text">系统运行中</span>
+        </div>
       </div>
+
       <div class="header-right">
-        <span class="header-user" id="screenUserName">管理员</span>
-        <button class="header-logout-btn" id="screenLogoutBtn">退出</button>
+        <div class="alarm-summary">
+          <div class="alarm-badge danger" id="dangerBadge">
+            <span class="alarm-icon">●</span>
+            <span id="dangerCount">0</span>
+          </div>
+        </div>
+        <div class="time-display" id="timeDisplay">--</div>
+        <button class="fullscreen-btn" id="fullscreenBtn" title="全屏">全屏</button>
       </div>
     </header>
 
-    <!-- Main Grid -->
     <main class="screen-main">
-      <!-- Left Column -->
-      <div class="screen-col screen-col-left">
-        <!-- Alarm Statistics -->
-        <div class="screen-panel">
-          <div class="panel-corner panel-corner-tl"></div>
-          <div class="panel-corner panel-corner-tr"></div>
-          <div class="panel-corner panel-corner-bl"></div>
-          <div class="panel-corner panel-corner-br"></div>
-          <div class="panel-header">
-            <span class="panel-title">告警统计</span>
-            <span class="panel-dot"></span>
-          </div>
-          <div class="panel-body">
-            <div class="alarm-stat-grid" id="alarmStatGrid">
-              <div class="alarm-stat-item">
-                <div class="alarm-stat-num glow-blue" id="alarmTotal">0</div>
-                <div class="alarm-stat-label">总告警</div>
-              </div>
-              <div class="alarm-stat-item">
-                <div class="alarm-stat-num glow-red pulse" id="alarmUnhandled">0</div>
-                <div class="alarm-stat-label">未处理</div>
-              </div>
-              <div class="alarm-stat-item">
-                <div class="alarm-stat-num glow-green" id="alarmProcessed">0</div>
-                <div class="alarm-stat-label">已处理</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Alarm List -->
-        <div class="screen-panel panel-flex">
-          <div class="panel-corner panel-corner-tl"></div>
-          <div class="panel-corner panel-corner-tr"></div>
-          <div class="panel-corner panel-corner-bl"></div>
-          <div class="panel-corner panel-corner-br"></div>
-          <div class="panel-header">
-            <span class="panel-title">实时告警</span>
-            <span class="panel-dot"></span>
-          </div>
-          <div class="panel-body panel-body-scroll" id="alarmListBody">
-            <div class="screen-loading-text">加载中...</div>
-          </div>
-        </div>
+      <!-- 中央留白 -->
+      <div class="center-section">
+        <div class="center-placeholder"></div>
       </div>
 
-      <!-- Center Column -->
-      <div class="screen-col screen-col-center">
-        <!-- Overview Stat Cards -->
-        <div class="overview-row" id="overviewRow">
-          <div class="overview-card">
-            <div class="overview-icon icon-device">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            </div>
-            <div class="overview-info">
-              <div class="overview-num glow-blue" id="totalDevices">0</div>
-              <div class="overview-label">设备总数</div>
-            </div>
-          </div>
-          <div class="overview-card">
-            <div class="overview-icon icon-monitor">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-            </div>
-            <div class="overview-info">
-              <div class="overview-num glow-blue" id="totalMonitors">0</div>
-              <div class="overview-label">监控点总数</div>
-            </div>
-          </div>
-          <div class="overview-card">
-            <div class="overview-icon icon-enabled">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
-            </div>
-            <div class="overview-info">
-              <div class="overview-num glow-green" id="enabledMonitors">0</div>
-              <div class="overview-label">启用监控点</div>
+      <!-- 右侧数据面板 -->
+      <aside class="right-sidebar">
+        <div class="right-panel">
+          <div class="panel-title">
+            <div class="title-capsule">
+              <div class="title-icon">
+                <svg class="icon-rotate-ring" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(0,212,255,0.3)" stroke-width="1" />
+                  <path d="M 16 2 A 14 14 0 0 1 30 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M 16 30 A 14 14 0 0 1 2 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+                <svg class="icon-inner-ring" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="0.5" />
+                  <path d="M 16 6 A 10 10 0 0 1 26 16" fill="none" stroke="rgba(0,212,255,0.6)" stroke-width="1" stroke-linecap="round" />
+                </svg>
+                <div class="icon-dot"></div>
+              </div>
+              <span class="title-text">设备状态</span>
+              <span class="title-sub">STATUS</span>
             </div>
           </div>
-          <div class="overview-card">
-            <div class="overview-icon icon-alarm">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <div class="device-status">
+            <div class="status-card">
+              <div class="flip-display" id="runningDevices">000</div>
+              <div class="status-label">
+                <span class="label-dot running"></span>
+                正在运行
+              </div>
             </div>
-            <div class="overview-info">
-              <div class="overview-num glow-orange pulse" id="alarmCountToday">0</div>
-              <div class="overview-label">今日告警</div>
+            <div class="status-card">
+              <div class="flip-display fault" id="faultDevices">000</div>
+              <div class="status-label">
+                <span class="label-dot fault"></span>
+                发生故障
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Trend Chart -->
-        <div class="screen-panel panel-flex">
-          <div class="panel-corner panel-corner-tl"></div>
-          <div class="panel-corner panel-corner-tr"></div>
-          <div class="panel-corner panel-corner-bl"></div>
-          <div class="panel-corner panel-corner-br"></div>
-          <div class="panel-header">
-            <span class="panel-title">监控值趋势</span>
-            <span class="panel-dot"></span>
+        <div class="right-panel">
+          <div class="panel-title">
+            <div class="title-capsule">
+              <div class="title-icon">
+                <svg class="icon-rotate-ring" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(0,212,255,0.3)" stroke-width="1" />
+                  <path d="M 16 2 A 14 14 0 0 1 30 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M 16 30 A 14 14 0 0 1 2 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+                <svg class="icon-inner-ring" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="0.5" />
+                  <path d="M 16 6 A 10 10 0 0 1 26 16" fill="none" stroke="rgba(0,212,255,0.6)" stroke-width="1" stroke-linecap="round" />
+                </svg>
+                <div class="icon-dot"></div>
+              </div>
+              <span class="title-text">设备统计</span>
+              <span class="title-sub">STATISTICS</span>
+            </div>
           </div>
-          <div class="panel-body panel-body-chart">
-            <div id="trendChart" class="chart-container"></div>
-          </div>
-        </div>
-
-        <!-- Latest Values Table -->
-        <div class="screen-panel">
-          <div class="panel-corner panel-corner-tl"></div>
-          <div class="panel-corner panel-corner-tr"></div>
-          <div class="panel-corner panel-corner-bl"></div>
-          <div class="panel-corner panel-corner-br"></div>
-          <div class="panel-header">
-            <span class="panel-title">最新监控值</span>
-            <span class="panel-dot"></span>
-          </div>
-          <div class="panel-body panel-body-table" id="latestValuesBody">
-            <div class="screen-loading-text">加载中...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Right Column -->
-      <div class="screen-col screen-col-right">
-        <!-- Monitor Status Distribution -->
-        <div class="screen-panel">
-          <div class="panel-corner panel-corner-tl"></div>
-          <div class="panel-corner panel-corner-tr"></div>
-          <div class="panel-corner panel-corner-bl"></div>
-          <div class="panel-corner panel-corner-br"></div>
-          <div class="panel-header">
-            <span class="panel-title">监控点状态分布</span>
-            <span class="panel-dot"></span>
-          </div>
-          <div class="panel-body panel-body-chart">
-            <div id="statusChart" class="chart-container"></div>
+          <div class="device-stats">
+            <div class="stats-left" id="statsLeft"></div>
+            <div class="chart-wrapper">
+              <div id="statsChart" class="chart-container"></div>
+              <div class="chart-center">
+                <div class="center-value" id="totalDevices">0</div>
+                <div class="center-label">设备总数</div>
+              </div>
+            </div>
+            <div class="stats-right" id="statsRight"></div>
           </div>
         </div>
 
-        <!-- Real-time Data Stream -->
-        <div class="screen-panel panel-flex">
-          <div class="panel-corner panel-corner-tl"></div>
-          <div class="panel-corner panel-corner-tr"></div>
-          <div class="panel-corner panel-corner-bl"></div>
-          <div class="panel-corner panel-corner-br"></div>
-          <div class="panel-header">
-            <span class="panel-title">实时数据流</span>
-            <span class="panel-dot"></span>
+        <div class="right-panel monitor-panel">
+          <div class="panel-title">
+            <div class="title-capsule">
+              <div class="title-icon">
+                <svg class="icon-rotate-ring" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(0,212,255,0.3)" stroke-width="1" />
+                  <path d="M 16 2 A 14 14 0 0 1 30 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M 16 30 A 14 14 0 0 1 2 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                </svg>
+                <svg class="icon-inner-ring" viewBox="0 0 32 32">
+                  <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="0.5" />
+                  <path d="M 16 6 A 10 10 0 0 1 26 16" fill="none" stroke="rgba(0,212,255,0.6)" stroke-width="1" stroke-linecap="round" />
+                </svg>
+                <div class="icon-dot"></div>
+              </div>
+              <span class="title-text">设备监控</span>
+              <span class="title-sub">MONITOR</span>
+            </div>
           </div>
-          <div class="panel-body panel-body-scroll" id="streamBody">
-            <div class="screen-loading-text">加载中...</div>
-          </div>
+          <div class="monitor-grid" id="monitorGrid"></div>
         </div>
-      </div>
+      </aside>
     </main>
+
+    <div class="bottom-bar">
+      <div class="bottom-item alarm-section">
+        <div class="panel-title">
+          <div class="title-capsule">
+            <div class="title-icon">
+              <svg class="icon-rotate-ring" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(0,212,255,0.3)" stroke-width="1" />
+                <path d="M 16 2 A 14 14 0 0 1 30 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M 16 30 A 14 14 0 0 1 2 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              <svg class="icon-inner-ring" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="0.5" />
+                <path d="M 16 6 A 10 10 0 0 1 26 16" fill="none" stroke="rgba(0,212,255,0.6)" stroke-width="1" stroke-linecap="round" />
+              </svg>
+              <div class="icon-dot"></div>
+            </div>
+            <span class="title-text">报警信息</span>
+            <span class="title-sub">ALARM</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <table class="alarm-table" id="alarmTable">
+            <thead>
+              <tr>
+                <th style="width:40px">序号</th>
+                <th style="width:120px">时间</th>
+                <th style="width:120px">监控点</th>
+                <th>报警事件</th>
+                <th style="width:80px">状态</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div class="no-alarm" id="noAlarm" style="display:none">
+            <p>系统运行正常，暂无告警</p>
+          </div>
+        </div>
+      </div>
+      <div class="bottom-item chart-section">
+        <div class="panel-title chart-panel-title">
+          <div class="title-capsule">
+            <div class="title-icon">
+              <svg class="icon-rotate-ring" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(0,212,255,0.3)" stroke-width="1" />
+                <path d="M 16 2 A 14 14 0 0 1 30 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M 16 30 A 14 14 0 0 1 2 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              <svg class="icon-inner-ring" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="0.5" />
+                <path d="M 16 6 A 10 10 0 0 1 26 16" fill="none" stroke="rgba(0,212,255,0.6)" stroke-width="1" stroke-linecap="round" />
+              </svg>
+              <div class="icon-dot"></div>
+            </div>
+            <span class="title-text" id="inflowTitleText">入口流量</span>
+            <span class="title-sub">INFLOW</span>
+          </div>
+          <div class="chart-select-wrap">
+            <button type="button" class="chart-select-toggle" id="inflowChartToggle" title="选择监控点" aria-haspopup="listbox" aria-label="选择监控点">
+              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" /></svg>
+            </button>
+            <select class="chart-select" id="inflowSelect" hidden></select>
+            <div class="chart-options" id="inflowChartOptions" role="listbox"></div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="y-axis-label" id="inflowAxisLabel">流量</div>
+          <div id="inflowChart" class="chart-container"></div>
+        </div>
+      </div>
+      <div class="bottom-item chart-section">
+        <div class="panel-title chart-panel-title">
+          <div class="title-capsule">
+            <div class="title-icon">
+              <svg class="icon-rotate-ring" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="14" fill="none" stroke="rgba(0,212,255,0.3)" stroke-width="1" />
+                <path d="M 16 2 A 14 14 0 0 1 30 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+                <path d="M 16 30 A 14 14 0 0 1 2 16" fill="none" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              <svg class="icon-inner-ring" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="10" fill="none" stroke="rgba(0,212,255,0.2)" stroke-width="0.5" />
+                <path d="M 16 6 A 10 10 0 0 1 26 16" fill="none" stroke="rgba(0,212,255,0.6)" stroke-width="1" stroke-linecap="round" />
+              </svg>
+              <div class="icon-dot"></div>
+            </div>
+            <span class="title-text" id="chlorineTitleText">余氯余量</span>
+            <span class="title-sub">CHLORINE</span>
+          </div>
+          <div class="chart-select-wrap">
+            <button type="button" class="chart-select-toggle" id="chlorineChartToggle" title="选择监控点" aria-haspopup="listbox" aria-label="选择监控点">
+              <svg viewBox="0 0 24 24" width="12" height="12"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" /></svg>
+            </button>
+            <select class="chart-select" id="chlorineSelect" hidden></select>
+            <div class="chart-options" id="chlorineChartOptions" role="listbox"></div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="y-axis-label" id="chlorineAxisLabel">余氯</div>
+          <div id="chlorineChart" class="chart-container"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- ECharts CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <!-- API & Utils -->
-  <script src="/js/api.js"></script>
-  <script src="/js/common.js"></script>
-  <!-- Page logic -->
-  <script src="/js/screen.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script src="../js/api.js?v=20260829c"></script>
+  <script src="../js/common.js?v=20260829a"></script>
+  <script src="../js/screen.js?v=20260829q"></script>
 </body>
 </html>

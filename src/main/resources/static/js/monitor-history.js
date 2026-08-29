@@ -4,8 +4,8 @@
  *   - value_type = FLOAT：折线趋势图
  *   - value_type = INT（0/1）：甘特图风格的状态时间线
  */
-document.addEventListener('DOMContentLoaded', () => {
-  if (!Auth.requireAuth()) return;
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!(await Auth.requireAuth())) return;
   Layout.init('monitor-history', '监控历史');
   MonitorHistoryPage.init();
 });

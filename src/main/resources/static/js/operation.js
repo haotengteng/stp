@@ -27,6 +27,7 @@
 
   // ── Init ───────────────────────────────────────────────────────
   async function init() {
+    if (!(await Auth.requireAuth())) return;
     Layout.init('operation', '操作记录');
     renderSkeleton();
     bindEvents();

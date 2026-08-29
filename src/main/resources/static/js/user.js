@@ -23,7 +23,8 @@
   };
 
   // ── Init ───────────────────────────────────────────────────────
-  function init() {
+  async function init() {
+    if (!(await Auth.requireAuth())) return;
     Layout.init('user', '用户管理');
     renderSkeleton();
     bindEvents();
