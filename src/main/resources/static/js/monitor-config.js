@@ -211,6 +211,7 @@ const MonitorConfigPage = {
           <td style="font-family:var(--font-mono)">${Utils.escape(item.deviceId)}</td>
           <td>${Utils.escape(item.deviceName)}</td>
           <td>${valueTypeTag}</td>
+          <td>${item.combineBit != null ? Utils.escape(item.combineBit) : '-'}</td>
           <td>${permissionTag}</td>
           <td>${statusTag}</td>
           <td style="white-space:nowrap">${Utils.formatDateTime(item.createTime)}</td>
@@ -233,6 +234,7 @@ const MonitorConfigPage = {
             <th>设备ID</th>
             <th>设备名称</th>
             <th>数值类型</th>
+            <th>组合位</th>
             <th>权限控制</th>
             <th>状态</th>
             <th>创建时间</th>
@@ -372,6 +374,11 @@ const MonitorConfigPage = {
               </select>
               <span style="font-size:var(--font-size-xs);color:var(--color-text-3)">指示灯/开关仅对取值 1/0 生效</span>
             </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">组合位</label>
+              <input type="number" class="form-input" id="modalCombineBit" placeholder="请输入组合位（bit 位号）" value="${isEdit && item.combineBit != null ? item.combineBit : ''}">
+              <span style="font-size:var(--font-size-xs);color:var(--color-text-3)">可选，用于标识该监控点在组合数据流中的位号</span>
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary" onclick="MonitorConfigPage.closeModal()">取消</button>
@@ -406,6 +413,7 @@ const MonitorConfigPage = {
       valueType: document.getElementById('modalValueType').value,
       valueDesc: document.getElementById('modalValueDesc').value.trim(),
       showType: document.getElementById('modalShowType').value,
+      combineBit: document.getElementById('modalCombineBit').value === '' ? null : Number(document.getElementById('modalCombineBit').value),
     };
 
     // Validation

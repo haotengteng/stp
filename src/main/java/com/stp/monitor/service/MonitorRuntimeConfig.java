@@ -29,6 +29,9 @@ public class MonitorRuntimeConfig {
     /** 显示方式：LIGHT-指示灯，SWITCH-开关，空-默认显示值 */
     private String showType;
 
+    /** 组合位（bit 位号） */
+    private Integer combineBit;
+
     private String monitorValue;
 
     /** 最近一次值更新时间（MQTT 上送或操作切换时更新） */

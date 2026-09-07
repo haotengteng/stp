@@ -44,6 +44,10 @@ public class MonitorConfig {
     @Column(name = "show_type")
     private String showType;
 
+    /** 组合位（bit 位号） */
+    @Column(name = "combine_bit")
+    private Integer combineBit;
+
     @Column(name = "create_time")
     private LocalDateTime createTime;
 

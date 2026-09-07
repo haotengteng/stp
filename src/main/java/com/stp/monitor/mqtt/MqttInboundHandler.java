@@ -2,6 +2,7 @@ package com.stp.monitor.mqtt;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.integration.annotation.ServiceActivator;
@@ -37,6 +38,11 @@ public class MqttInboundHandler {
     @Autowired
     private AlarmRecordService alarmRecordService;
 
+    /** 组合寄存器监控点：值为无符号16位，按 bit 拆分为多个子监控点 */
+    private static final Set<String> REGISTER_MONITOR_IDS = Set.of(
+            "REGISTER_40001", "REGISTER_40002", "REGISTER_40003",
+            "REGISTER_40004", "REGISTER_40005", "REGISTER_40006");
+
     /**
      * 处理 /UploadTopicNB 接收到的 JSON 消息
      * 解析以 monitorId 为 key、value 为采集值的 JSON，补齐监控点名称后写入历史表
@@ -68,28 +74,87 @@ public class MqttInboundHandler {
                 if (monitorId.equals(monitorValue)) {
                     return;
                 }
+                // REGISTER_40001~40006 为无符号16位组合寄存器，拆分为多个子监控点(组合位)值
+                if (isRegisterMonitorId(monitorId)) {
+                    parseRegister(monitorId, monitorValue);
+                    return;
+                }
                 MonitorRuntimeConfig config = monitorConfigCache.getByMonitorId(monitorId);
                 if (config == null) {
                     log.warn("未找到监控点配置，monitorId={}", monitorId);
                     return;
                 }
-                // 记录更新前的值，用于 LIGHT 指示灯 0/1 跳变判断
-                String prevValue = config.getMonitorValue();
-                handleLightTransition(config, prevValue, monitorValue);
-
-                monitorConfigCache.updateMonitorValue(monitorId, monitorValue);
-                config.setMonitorValue(monitorValue);
-
-                MonitorHistoryInfo history = new MonitorHistoryInfo();
-                history.setMonitorId(monitorId);
-                history.setMonitorName(config.getMonitorName());
-                history.setMonitorValue(monitorValue);
-                monitorHistoryInfoService.save(history);
-                log.info("MQTT 数据已保存，monitorId={}，value={}", monitorId, monitorValue);
+                // 更新缓存并保存历史记录
+                updateAndSaveConfig(config, monitorValue);
             });
         } catch (Exception e) {
             log.error("MQTT 消息解析或保存失败，payload={}", payload, e);
         }
+    }
+
+    /**
+     * 解析组合寄存器值：REGISTER_40001~40006 的值为无符号16位整数，
+     * 根据位号在其对应的寄存器码表中取各 DeviceBit 的 monitorId，
+     * 逐个计算 bit 值(0/1)并更新缓存、保存历史记录。
+     */
+    private void parseRegister(String registerId, String monitorValue) {
+        int raw;
+        try {
+            raw = Integer.parseUnsignedInt(monitorValue);
+        } catch (NumberFormatException e) {
+            log.warn("组合寄存器值非无符号整数，monitorId={}，value={}", registerId, monitorValue);
+            return;
+        }
+        Integer address = registerAddressOf(registerId);
+        List<ModbusRegisterParser.DeviceBit> bitMapping = address == null ? null : ModbusRegisterParser.REGISTER_MAP.get(address);
+        if (bitMapping == null) {
+            log.warn("寄存器无对应码表，monitorId={}", registerId);
+            return;
+        }
+        for (ModbusRegisterParser.DeviceBit bit : bitMapping) {
+            MonitorRuntimeConfig config = monitorConfigCache.getByMonitorId(bit.getMonitorId());
+            if (config == null) {
+                continue;
+            }
+            int bitValue = (raw >> bit.getBitPosition()) & 1;
+            updateAndSaveConfig(config, String.valueOf(bitValue));
+        }
+    }
+
+    /** 将 REGISTER_40001 形式的监控点 ID 解析为寄存器地址(40001) */
+    private Integer registerAddressOf(String registerId) {
+        try {
+            return Integer.parseInt(registerId.replace("REGISTER_", ""));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 统一更新缓存并保存历史记录，同时处理 LIGHT 指示灯 0/1 跳变告警
+     */
+    private void updateAndSaveConfig(MonitorRuntimeConfig config, String monitorValue) {
+        // 当前值与缓存中的值一致时跳过，避免重复更新缓存、重复保存历史记录
+        if (monitorValue.equals(config.getMonitorValue())) {
+            return;
+        }
+        // 记录更新前的值，用于 LIGHT 指示灯 0/1 跳变判断
+        String prevValue = config.getMonitorValue();
+        handleLightTransition(config, prevValue, monitorValue);
+
+        monitorConfigCache.updateMonitorValue(config.getMonitorId(), monitorValue);
+        config.setMonitorValue(monitorValue);
+
+        MonitorHistoryInfo history = new MonitorHistoryInfo();
+        history.setMonitorId(config.getMonitorId());
+        history.setMonitorName(config.getMonitorName());
+        history.setMonitorValue(monitorValue);
+        monitorHistoryInfoService.save(history);
+        log.info("MQTT 数据已保存，monitorId={}，value={}", config.getMonitorId(), monitorValue);
+    }
+
+    private boolean isRegisterMonitorId(String monitorId) {
+        return REGISTER_MONITOR_IDS.contains(monitorId);
     }
 
     /**

@@ -24,4 +24,7 @@ public class MonitorConfigRequest {
 
     /** 显示方式：LIGHT-指示灯，SWITCH-开关，空-默认显示值 */
     private String showType;
+
+    /** 组合位（bit 位号） */
+    private Integer combineBit;
 }

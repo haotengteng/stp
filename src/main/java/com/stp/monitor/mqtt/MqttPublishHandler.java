@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -56,10 +57,11 @@ public class MqttPublishHandler {
     public void publish(String monitorId, String value, String preValue, String operator) {
         String operationId = generateOperationId();
         saveOperationHistory(monitorId, value, preValue, operator, operationId);
-        
-        String payload = buildControlJson(monitorId, value, operationId);
+
+        String[] resolved = resolvePublishMonitor(monitorId, value);
+        String payload = buildControlJson(resolved[0], resolved[1], operationId);
         mqttOutputChannel.send(MessageBuilder.withPayload(payload).build());
-        log.info("MQTT 下发消息，payload={}", payload);
+        log.info("MQTT 下发消息，monitorId={}，publishMonitorId={}，payload={}", monitorId, resolved[0], payload);
     }
 
     /**
@@ -69,12 +71,51 @@ public class MqttPublishHandler {
         String operationId = generateOperationId();
         saveOperationHistory(monitorId, value, null, null, operationId);
 
-        String payload = buildControlJson(monitorId, value, operationId);
+        String[] resolved = resolvePublishMonitor(monitorId, value);
+        String payload = buildControlJson(resolved[0], resolved[1], operationId);
         mqttOutputChannel.send(MessageBuilder
                 .withPayload(payload)
                 .setHeader(MqttHeaders.TOPIC, topic)
                 .build());
-        log.info("MQTT 下发消息，topic={}，payload={}", topic, payload);
+        log.info("MQTT 下发消息，topic={}，monitorId={}，publishMonitorId={}，payload={}", topic, monitorId, resolved[0], payload);
+    }
+
+    /**
+     * 若监控点属于组合寄存器(REGISTER_40001~40006)中的某一 bit 位，
+     * 则从缓存读取该寄存器所有 bit 当前值组装出完整的 16 位值，
+     * 并改为使用寄存器名作为下发 monitorId；非组合位返回原值原样下发。
+     *
+     * @return [下发的 monitorId, 下发的 value]
+     */
+    private String[] resolvePublishMonitor(String monitorId, String value) {
+        Integer registerAddress = ModbusRegisterParser.getRegisterAddressByMonitorId(monitorId);
+        if (registerAddress == null) {
+            return new String[]{monitorId, value};
+        }
+        int raw = readRegisterValue(registerAddress);
+        int bitPosition = ModbusRegisterParser.CODE_INDEX.get(monitorId).getBitPosition();
+        if ("1".equals(value)) {
+            raw |= (1 << bitPosition);
+        } else {
+            raw &= ~(1 << bitPosition);
+        }
+        return new String[]{"REGISTER_" + registerAddress, String.valueOf(raw)};
+    }
+
+    /** 从缓存读取指定寄存器各 bit 位当前值，组装成 16 位整数值 */
+    private int readRegisterValue(Integer registerAddress) {
+        int raw = 0;
+        List<ModbusRegisterParser.DeviceBit> bits = ModbusRegisterParser.REGISTER_MAP.get(registerAddress);
+        if (bits == null) {
+            return raw;
+        }
+        for (ModbusRegisterParser.DeviceBit bit : bits) {
+            MonitorRuntimeConfig cfg = monitorConfigCache.getByMonitorId(bit.getMonitorId());
+            if (cfg != null && "1".equals(cfg.getMonitorValue())) {
+                raw |= (1 << bit.getBitPosition());
+            }
+        }
+        return raw;
     }
 
     /**
@@ -133,6 +174,10 @@ public class MqttPublishHandler {
      */
     private Object convertValue(String monitorId, String value) {
         if (!StringUtils.hasText(value)) {
+            return value;
+        }
+        // 组合寄存器下发的值为组装后的整数字符串，保持字符串下发
+        if (ModbusRegisterParser.isRegisterMonitorId(monitorId)) {
             return value;
         }
         MonitorRuntimeConfig config = monitorConfigCache.getByMonitorId(monitorId);
