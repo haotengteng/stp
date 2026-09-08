@@ -18,6 +18,16 @@
 
   let monitorsCache = [];    // 最近一次 overview 监控点数据，用于开关切换后局部更新
 
+  // 时长类监控点：值为数字字符串时表示分钟时长，展示时转换为 分/时/天
+  const DURATION_MONITOR_IDS = new Set([
+    'ZJPNB1YXSJ', 'ZJPNB2YXSJ',
+    'ZJTLQ1YXSJ', 'ZJTLQ1TZSJ', 'ZJTLQ2YXSJ', 'ZJTLQ2TZSJ',
+    'TSJLB1YXSJ', 'TSJLB2YXSJ',
+    'CDCPNB1YXSJ', 'CDCPNB2YXSJ',
+    'QXCXBYXSJ', 'QXCXBTZSJ',
+    'BYB1YXSJ', 'BYB1TZSJ',
+  ]);
+
   // ── Init ──
   document.addEventListener('DOMContentLoaded', async function () {
     if (!(await Auth.requireAuth())) return;
@@ -147,7 +157,12 @@
       state.previousValues[m.monitorId] = m.latestValue;
 
       const raw = m.latestValue;
-      const desc = hasValue ? Utils.renderMonitorValue(raw, m.valueType, m.valueDesc) : '';
+      let desc = hasValue ? Utils.renderMonitorValue(raw, m.valueType, m.valueDesc) : '';
+      // 时长类监控点：值为数字字符串时表示分钟时长，按 分钟/时/天 优化展示
+      if (hasValue && DURATION_MONITOR_IDS.has(m.monitorId)) {
+        const formatted = Utils.formatMinutes(raw);
+        if (formatted !== null) desc = formatted;
+      }
 
       let valueHtml = '暂无数据';
       if (hasValue) {

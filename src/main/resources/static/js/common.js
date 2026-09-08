@@ -202,6 +202,23 @@ const Utils = {
     return this.escape(v);
   },
 
+  /**
+   * 将分钟时长优化展示：<60 显示 X分钟，<1440 显示 X时Y分，否则显示 X天Y时Z分。
+   * 非数字或负值返回 null，由调用方回退为原值展示。
+   */
+  formatMinutes(value) {
+    const total = Number(value);
+    if (typeof value === 'string' && value.trim() === '') return null;
+    if (!Number.isFinite(total) || total < 0) return null;
+    const m = Math.floor(total);
+    if (m < 60) return `${m}分钟`;
+    const d = Math.floor(m / 1440);
+    if (d > 0) {
+      return `${d}天${Math.floor((m % 1440) / 60)}时${m % 60}分`;
+    }
+    return `${Math.floor(m / 60)}时${m % 60}分`;
+  },
+
   getInitials(name) {
     if (!name) return 'U';
     return name.slice(0, 1).toUpperCase();

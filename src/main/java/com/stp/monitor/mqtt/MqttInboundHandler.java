@@ -50,7 +50,7 @@ public class MqttInboundHandler {
     @ServiceActivator(inputChannel = "mqttInputChannel")
     public void handle(@Payload String payload,
             @Header(value = "mqtt_topic", required = false) String topic) {
-        log.info("收到 MQTT 消息，topic={}，payload={}", topic, payload);
+        log.debug("收到 MQTT 消息，topic={}，payload={}", topic, payload);
         parseAndSave(payload);
     }
 
@@ -150,7 +150,7 @@ public class MqttInboundHandler {
         history.setMonitorName(config.getMonitorName());
         history.setMonitorValue(monitorValue);
         monitorHistoryInfoService.save(history);
-        log.info("MQTT 数据已保存，monitorId={}，value={}", config.getMonitorId(), monitorValue);
+        log.debug("MQTT 数据已保存，monitorId={}，value={}", config.getMonitorId(), monitorValue);
     }
 
     private boolean isRegisterMonitorId(String monitorId) {
