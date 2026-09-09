@@ -397,12 +397,16 @@
     els.noAlarm.style.display = 'none';
     list.forEach((alarm, idx) => {
       const tr = document.createElement('tr');
+      // 0-未处理，1-已处理
+      const statusHtml = alarm.status === 1
+        ? '<span class="status-tag status-completed">已处理</span>'
+        : '<span class="status-tag status-pending">未处理</span>';
       tr.innerHTML = `
         <td>${idx + 1}</td>
         <td>${formatAlarmTime(alarm.createTime)}</td>
         <td>${escapeHtml(alarm.monitorName)}</td>
         <td>${escapeHtml(alarm.message || '设备异常')}</td>
-        <td><span class="status-tag status-pending">待处理</span></td>
+        <td>${statusHtml}</td>
       `;
       tbody.appendChild(tr);
     });

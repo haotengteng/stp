@@ -21,7 +21,7 @@
   overflow: hidden;
   --sidebar-width: 330px;
   --header-h: 72px;
-  --bottom-h: 220px;
+  --bottom-h: 260px;
 }
 
 /* Header */
@@ -238,6 +238,15 @@
 .center-section {
   flex: 1.6;
   min-width: 0;
+  /* 设备监控面板与中央留白并排展示 */
+  flex-direction: row;
+}
+
+/* 设备监控面板：移入中央区左侧，加宽至 30%（最小 340px），保证一行 3 个开关卡片完整展示 */
+.center-section .right-panel.monitor-panel {
+  flex: none;
+  width: calc(30% - 6px);
+  min-width: 340px;
 }
 
 .right-sidebar {
@@ -246,6 +255,12 @@
      本列 25% 相对 .screen-main 内容区(0.25W - 8px)，故减去 6px 即与底部 chart 等宽 */
   width: calc(25% - 6px);
   flex-shrink: 0;
+}
+
+/* 设备统计面板：占满右侧栏剩余高度，底部对齐 sidebar 底部 */
+.right-sidebar > .right-panel:last-child {
+  flex: 1;
+  min-height: 0;
 }
 
 .center-placeholder {
@@ -990,6 +1005,8 @@
 
 @media (max-width: 1024px) {
   .screen-main { flex-direction: column; overflow-y: auto; }
+  .center-section { flex-direction: column; }
+  .center-section .right-panel.monitor-panel { width: 100%; }
   .right-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; }
   .right-sidebar > .right-panel { flex: 1; min-width: 280px; }
   .bottom-bar { flex-direction: column; height: auto; }
