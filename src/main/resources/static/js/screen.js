@@ -8,6 +8,7 @@
     deviceStatus: { running: 0, fault: 0, unknown: 0 },
     alarms: [],
     deviceCategories: [],
+    operations: [],
     updateTimer: null,
     statsTimer: null,
     clockTimer: null,
@@ -27,6 +28,7 @@
     statsLeft: document.getElementById('statsLeft'),
     statsRight: document.getElementById('statsRight'),
     totalDevices: document.getElementById('totalDevices'),
+    opList: document.getElementById('opList'),
     monitorGrid: document.getElementById('monitorGrid'),
     alarmTable: document.querySelector('#alarmTable tbody'),
     noAlarm: document.getElementById('noAlarm'),
@@ -201,9 +203,11 @@
     if (!state.isRunning) return;
     await Promise.all([
       loadDeviceStatus(),
+      loadOperations(),
     ]);
     renderStats();
     renderMonitorGrid();
+    renderOperations();
     await updateCharts();
   }
 
@@ -229,6 +233,17 @@
       state.deviceStatus = await API.dashboard.deviceStatus();
     } catch (e) {
       console.error('loadDeviceStatus failed', e);
+    }
+  }
+
+  // 最近操作记录：按 createTime 倒序取前 8 条
+  async function loadOperations() {
+    try {
+      const res = await API.monitorOperation.page(1, 8);
+      state.operations = res.content || [];
+    } catch (e) {
+      console.error('loadOperations failed', e);
+      state.operations = [];
     }
   }
 
@@ -286,6 +301,36 @@
     `;
   }
 
+  function renderOperations() {
+    const list = els.opList;
+    if (!list) return;
+    list.innerHTML = '';
+    if (state.operations.length === 0) {
+      list.innerHTML = '<div class="op-empty">暂无操作记录</div>';
+      return;
+    }
+    state.operations.forEach(op => {
+      const on = String(op.value) === '1';
+      const name = op.monitorName || op.monitorId || '未知设备';
+      const time = Utils.formatDateTime(op.createTime);
+      const operator = op.operator || '-';
+      const div = document.createElement('div');
+      div.className = 'op-item';
+      div.title = `${name}（${on ? '开' : '关'}）· 操作人：${operator} · ${Utils.formatDateTime(new Date(op.createTime))}`;
+      div.innerHTML = `
+        <span class="op-badge ${on ? 'on' : 'off'}">${on ? '开' : '关'}</span>
+        <div class="op-info">
+          <div class="op-name">${escapeHtml(name)}</div>
+          <div class="op-meta">
+            <span>${time}</span>
+            <span class="op-operator">${escapeHtml(operator)}</span>
+          </div>
+        </div>
+      `;
+      list.appendChild(div);
+    });
+  }
+
   function renderMonitorGrid() {
     const container = els.monitorGrid;
     container.innerHTML = '';
@@ -300,12 +345,16 @@
     switches.forEach(item => {
       const raw = item.monitorValue;
       const isOn = String(raw) === '1';
+      // 监控点未连接（monitorValue 为空）时不可操作
+      const connected = raw !== null && raw !== undefined && String(raw).trim() !== '';
       const div = document.createElement('div');
-      div.className = 'switch-card';
+      div.className = 'switch-card' + (connected ? '' : ' offline');
       div.dataset.monitorId = item.monitorId;
       div.dataset.monitorName = item.monitorName || item.monitorId;
-      // hover 提示：monitor_name + 权限（当前仅展示 rw 可操作开关）
-      div.title = `${item.monitorName || item.monitorId}（权限：读写）`;
+      // hover 提示：monitor_name + 权限（当前仅展示 rw 可操作开关）；未连接时提示不可操作
+      div.title = connected
+        ? `${item.monitorName || item.monitorId}（权限：读写）`
+        : `${item.monitorName || item.monitorId}（监控点未连接，不可操作）`;
       div.innerHTML = `
         <div class="switch-icon ${isOn ? 'on' : 'off'}">
           <svg class="icon-ring ring-a" viewBox="0 0 40 40" fill="none">
@@ -322,9 +371,9 @@
           </span>
         </div>
         <div class="switch-name" title="${escapeHtml(item.monitorName || item.monitorId)}">${escapeHtml(shortLabel(item.monitorName || item.monitorId))}</div>
-        <button class="switch-toggle ${isOn ? 'on' : 'off'} editable" data-value="${String(raw) === '0' ? '0' : '1'}" title="点击切换">
+        <button class="switch-toggle ${isOn ? 'on' : 'off'} ${connected ? 'editable' : 'offline'}" data-value="${String(raw) === '0' ? '0' : '1'}" title="${connected ? '点击切换' : '监控点未连接，不可操作'}" ${connected ? '' : 'disabled'}>
           <span class="toggle-track"><span class="toggle-knob"></span></span>
-          <span class="toggle-text">${isOn ? '开' : '关'}</span>
+          <span class="toggle-text">${connected ? (isOn ? '开' : '关') : '离线'}</span>
         </button>
       `;
       container.appendChild(div);

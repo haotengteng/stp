@@ -134,8 +134,9 @@ public class MqttInboundHandler {
      * 统一更新缓存并保存历史记录，同时处理 LIGHT 指示灯 0/1 跳变告警
      */
     private void updateAndSaveConfig(MonitorRuntimeConfig config, String monitorValue) {
-        // 当前值与缓存中的值一致时跳过，避免重复更新缓存、重复保存历史记录
+        // 当前值与缓存中的值一致时，仅刷新心跳时间，不重复更新缓存、不重复保存历史记录
         if (monitorValue.equals(config.getMonitorValue())) {
+            monitorConfigCache.touchMonitor(config.getMonitorId());
             return;
         }
         // 记录更新前的值，用于 LIGHT 指示灯 0/1 跳变判断

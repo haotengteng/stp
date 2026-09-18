@@ -60,6 +60,33 @@ public class MonitorConfigCache {
         }
     }
 
+    /**
+     * 仅刷新监控点的心跳时间（值未变化时调用，表示设备仍在线上）
+     */
+    public void touchMonitor(String monitorId) {
+        MonitorRuntimeConfig config = configMap.get(monitorId);
+        if (config != null) {
+            config.setUpdateTime(LocalDateTime.now());
+        }
+    }
+
+    /**
+     * 将超过指定时长（分钟）未更新值的监控点 monitorValue 置为 null（视为未连接/离线），
+     * 返回被清理的监控点数量
+     */
+    public int clearStaleValues(long minutes) {
+        LocalDateTime threshold = LocalDateTime.now().minusMinutes(minutes);
+        int cleared = 0;
+        for (MonitorRuntimeConfig config : configMap.values()) {
+            LocalDateTime updateTime = config.getUpdateTime();
+            if (updateTime != null && updateTime.isBefore(threshold) && config.getMonitorValue() != null) {
+                config.setMonitorValue(null);
+                cleared++;
+            }
+        }
+        return cleared;
+    }
+
     public MonitorRuntimeConfig getByMonitorId(String monitorId) {
         return configMap.get(monitorId);
     }

@@ -697,6 +697,140 @@
   margin-top: 2px;
 }
 
+/* Recent Operations */
+.op-section {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 12px;
+  border-top: 1px solid rgba(100, 130, 180, 0.18);
+}
+
+.op-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 2px 8px;
+  flex-shrink: 0;
+}
+
+.op-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 2px;
+}
+
+.op-sub {
+  font-size: 9px;
+  color: rgba(148, 163, 184, 0.6);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-family: var(--font-mono);
+}
+
+.op-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 212, 255, 0.4) rgba(8, 18, 38, 0.6);
+}
+
+.op-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.op-list::-webkit-scrollbar-track {
+  background: rgba(8, 18, 38, 0.6);
+  border-radius: 3px;
+}
+
+.op-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.35);
+  border-radius: 3px;
+}
+
+.op-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: linear-gradient(180deg, rgba(18, 34, 66, 0.5) 0%, rgba(12, 24, 48, 0.55) 100%);
+  border: 1px solid rgba(100, 130, 180, 0.12);
+  border-radius: 6px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.op-item:hover {
+  border-color: rgba(0, 212, 255, 0.35);
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
+}
+
+.op-badge {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.op-badge.on {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.op-badge.off {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ff6b6b;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.op-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.op-name {
+  font-size: 11px;
+  color: #cbd5e1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-meta {
+  font-size: 9px;
+  color: #64748b;
+  margin-top: 2px;
+  display: flex;
+  gap: 8px;
+}
+
+.op-meta .op-operator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.op-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a6fa5;
+  font-size: 11px;
+}
+
 /* Monitor Grid - SWITCH 开关控制面板 */
 .monitor-grid {
   display: grid;
@@ -882,6 +1016,40 @@
 
 .switch-toggle.on .toggle-text {
   color: #34d399;
+}
+
+/* 监控点未连接（monitorValue 为空）时开关不可操作 */
+.switch-card.offline {
+  opacity: 0.7;
+  border-color: rgba(100, 130, 180, 0.1);
+}
+
+.switch-card.offline .icon-ring {
+  color: rgba(100, 130, 180, 0.35);
+}
+
+.switch-card.offline .icon-core {
+  background: radial-gradient(circle at 32% 28%, rgba(100, 116, 139, 0.15), rgba(8, 18, 40, 0.92) 72%);
+  border-color: rgba(100, 130, 180, 0.35);
+  color: #64748b;
+}
+
+.switch-toggle.offline {
+  cursor: not-allowed;
+}
+
+.switch-toggle.offline .toggle-track {
+  background: rgba(71, 85, 105, 0.3);
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  box-shadow: none;
+}
+
+.switch-toggle.offline .toggle-knob {
+  background: #64748b;
+}
+
+.switch-toggle.offline .toggle-text {
+  color: #64748b;
 }
 
 /* Bottom Bar */
