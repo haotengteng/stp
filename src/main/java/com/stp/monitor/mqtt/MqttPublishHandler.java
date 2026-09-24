@@ -184,14 +184,16 @@ public class MqttPublishHandler {
         if (config == null || !StringUtils.hasText(config.getValueType())) {
             return value;
         }
-        try {
-            if ("FLOAT".equalsIgnoreCase(config.getValueType())) {
-                return Float.parseFloat(value);
-            }
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            log.warn("MQTT 下发值转换失败，monitorId={}，valueType={}，value={}", monitorId, config.getValueType(), value);
-            return value;
-        }
+         return value;
+        // try {
+            // if ("FLOAT".equalsIgnoreCase(config.getValueType())) {
+            //     return Float.parseFloat(value);
+            // }
+            // return Integer.parseInt(value);
+
+        // } catch (NumberFormatException e) {
+        //     log.warn("MQTT 下发值转换失败，monitorId={}，valueType={}，value={}", monitorId, config.getValueType(), value);
+        //     return value;
+        // }
     }
 }

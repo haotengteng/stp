@@ -20,12 +20,20 @@
 
   // 时长类监控点：值为数字字符串时表示分钟时长，展示时转换为 分/时/天
   const DURATION_MONITOR_IDS = new Set([
-    'ZJPNB1YXSJ', 'ZJPNB2YXSJ',
-    'ZJTLQ1YXSJ', 'ZJTLQ1TZSJ', 'ZJTLQ2YXSJ', 'ZJTLQ2TZSJ',
-    'TSJLB1YXSJ', 'TSJLB2YXSJ',
-    'CDCPNB1YXSJ', 'CDCPNB2YXSJ',
-    'QXCXBYXSJ', 'QXCXBTZSJ',
-    'BYB1YXSJ', 'BYB1TZSJ',
+    'L0',
+'L1',
+'L2',
+'L3',
+'L4',
+'L5',
+'L6',
+'L7',
+'L8',
+'L9',
+'M0',
+'M1',
+'M2',
+'M3'
   ]);
 
   // ── Init ──
